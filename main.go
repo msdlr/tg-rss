@@ -1,9 +1,13 @@
 package main
 
-import "fmt"
-import "tg-rss/config"
+import (
+	"tg-rss/config"
+	"tg-rss/internal/telegram"
+)
 
 func main() {
 	config.LoadConfig()
-	fmt.Println("Hello world!")
+
+	telegram.Start()
+	telegram.QueryLoop()
 }

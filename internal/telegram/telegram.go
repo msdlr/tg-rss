@@ -6,10 +6,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-var updates tgbotapi.UpdatesChannel // We query this object using range to get messages received by the bot
+var upChan tgbotapi.UpdatesChannel
+var bot *tgbotapi.BotAPI
 
-func Start() (upChan tgbotapi.UpdatesChannel) {
-	bot, err := tgbotapi.NewBotAPI(config.Config.TelegramToken)
+func Start() {
+	var err error
+	bot, err = tgbotapi.NewBotAPI(config.Configs.TelegramToken)
 	if err != nil {
 		panic(err)
 	}
@@ -19,11 +21,36 @@ func Start() (upChan tgbotapi.UpdatesChannel) {
 	updateConfig.Timeout = 30
 
 	// Start polling Telegram for updates.
-	upChan, chanErr := bot.GetUpdatesChan(updateConfig)
+	c, chanErr := bot.GetUpdatesChan(updateConfig)
+
+	upChan = c
 
 	if chanErr != nil {
 		panic(err)
 	}
+}
 
-	return upChan
+func QueryLoop() {
+
+	for update := range upChan {
+		if update.Message == nil { // ignore any non-Message updates
+			continue
+		}
+
+		if !update.Message.IsCommand() { // ignore any non-command Messages
+			continue
+		}
+
+		switch update.Message.Command() {
+		case "start":
+			handleStartCommand(*update.Message)
+		}
+	}
+
+}
+
+func handleStartCommand(inMsg tgbotapi.Message) {
+	outMsg := tgbotapi.NewMessage(inMsg.Chat.ID, "")
+	outMsg.Text = "/start called"
+	bot.Send(outMsg)
 }
