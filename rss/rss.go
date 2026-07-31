@@ -56,7 +56,7 @@ func GetRSSFeedTitle(url string) (string, error) {
 	}
 }
 
-func GetArticlesForUser(userID int64) (news []Article) {
+func GetArticlesForUser(userID int64, filterOld bool) (news []Article) {
 	feedEntries, err := db.GetUserFeeds(userID)
 
 	if err != nil {
@@ -80,19 +80,16 @@ func GetArticlesForUser(userID int64) (news []Article) {
 				FeedTitle:   feed.Title,
 			}
 
+			lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
+
+			if filterOld && lastTimestamp.Before(time.Now()) {
+				break
+			}
+
 			news = append(news, newArticle)
 		}
 	}
 	return news
-}
-
-func filterOldArticles(newsIn []Article) (newsOut []Article) {
-	for _, a := range newsIn {
-		if time.Now().Add(-(config.GetUpdatePeriod())).Before(a.Timestamp) {
-			newsOut = append(newsOut, a)
-		}
-	}
-	return
 }
 
 func FormatNewsHTML(news []Article) string {
