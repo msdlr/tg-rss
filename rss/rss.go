@@ -19,8 +19,12 @@ type Article struct {
 	FeedTitle   string
 }
 
-var FeedParser *gofeed.Parser
+var feedParser *gofeed.Parser
 var timeDelta time.Duration
+
+func InitFeedParser() {
+	feedParser = gofeed.NewParser()
+}
 
 func GetRSSFeedTitle(url string) (string, error) {
 	resp, err := http.Get(url)
@@ -59,7 +63,7 @@ func GetArticlesForUser(userID int64) (news []Article) {
 	news = make([]Article, 0)
 
 	for _, feedEntry := range feedEntries {
-		feed, err := FeedParser.ParseURL(feedEntry.URL)
+		feed, err := feedParser.ParseURL(feedEntry.URL)
 		if err != nil {
 			return make([]Article, 0)
 		}

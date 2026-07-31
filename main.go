@@ -7,12 +7,10 @@ import (
 	"tg-rss/rss"
 	"tg-rss/tg"
 	"time"
-
-	"github.com/mmcdole/gofeed"
 )
 
 func rssLoop() {
-	rss.FeedParser = gofeed.NewParser()
+	rss.InitFeedParser()
 
 	for {
 		log.Println("Reading RSS feeds...")
