@@ -74,7 +74,7 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 	arts := rss.GetArticlesForUser(user, 3)
 
 	if len(arts) > 0 {
-		SendMessage(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
+		SendMessageHTML(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
 	}
 }
 
@@ -221,7 +221,7 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 }
 
-func SendMessage(chatID int64, msg string) {
+func SendMessageHTML(chatID int64, msg string) {
 	// Check if bot is initialized
 	if b == nil {
 		log.Println("Bot not initialized")
