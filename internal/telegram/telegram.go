@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"tg-rss/config"
@@ -73,13 +74,13 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message.Chat.Type == "private" {
 		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Username)
 		if err != nil {
-			fmt.Println("Error saving user")
+			log.Println("Error saving user")
 			return
 		}
 	} else {
 		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Title)
 		if err != nil {
-			fmt.Println("Error group chat")
+			log.Println("Error group chat")
 			return
 		}
 	}
@@ -87,7 +88,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// Add the feed to the database
 	feedID, feedErr := db.AddFeed(url, feedTitle)
 	if feedErr != nil {
-		fmt.Println("Error adding feed")
+		log.Println("Error adding feed")
 		return
 	}
 
@@ -95,7 +96,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	subErr := db.Subscribe(update.Message.Chat.ID, feedID)
 
 	if subErr != nil {
-		fmt.Println("Error adding subscription")
+		log.Println("Error adding subscription")
 		return
 	}
 
