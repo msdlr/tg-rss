@@ -118,9 +118,32 @@ func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 
 func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	b.SendMessage(ctx, &bot.SendMessageParams{
+
+	feeds, _ := db.GetUserFeeds(update.Message.Chat.ID)
+
+	if len(feeds) == 0 {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      "No subscriptions found",
+			ParseMode: models.ParseModeMarkdown,
+		})
+		return
+	}
+
+	var msg string = "Your feeds (" + strconv.Itoa(len(feeds)) + "):\n"
+
+	for _, f := range feeds {
+		msg += "- " + f.Title + " (" + f.URL + ")\n"
+	}
+
+	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		Text:      bot.EscapeMarkdown(msg),
 		ParseMode: models.ParseModeMarkdown,
 	})
+
+	if err != nil {
+		log.Println("Failed to send message")
+		log.Println(err)
+	}
 }
