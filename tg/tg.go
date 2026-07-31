@@ -2,10 +2,11 @@ package tg
 
 import (
 	"context"
+	"fmt"
+	"html"
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"tg-rss/config"
 	"tg-rss/db"
@@ -172,13 +173,19 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	}
 
-	var msg string = "Your feeds (" + strconv.Itoa(len(feeds)) + "):\n"
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "<b>Your feeds (%d):</b>\n", len(feeds))
 
 	for _, f := range feeds {
-		msg += "- " + f.Title + " (" + f.URL + ")\n"
+		fmt.Fprintf(
+			&sb,
+			"• <a href=\"%s\">%s</a>\n",
+			html.EscapeString(f.URL),
+			html.EscapeString(f.Title),
+		)
 	}
 
-	SendMessageMarkdown(ctx, b, update, msg)
+	SendMessageHTML(update.Message.Chat.ID, sb.String())
 }
 
 func SendMessageMarkdown(ctx context.Context, b *bot.Bot, update *models.Update, msg string) {
