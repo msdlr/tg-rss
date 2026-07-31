@@ -11,6 +11,12 @@ import (
 
 var db *sql.DB
 
+type Feed struct {
+	ID    int64  `json:"id"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
+}
+
 // InitDB creates or loads the database
 func InitDB(dbPath string) error {
 	// Ensure directory exists
@@ -107,6 +113,20 @@ func GetFeedID(url string) (int64, error) {
 		return 0, nil
 	}
 	return id, err
+}
+
+func GetFeedByURL(url string) (*Feed, error) {
+	query := `SELECT id, url, title FROM feeds WHERE url = ?`
+
+	var feed Feed
+	err := db.QueryRow(query, url).Scan(&feed.ID, &feed.URL, &feed.Title)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &feed, nil
 }
 
 // Subscribe adds a subscription for a user to a feed

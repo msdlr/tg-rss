@@ -110,11 +110,39 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 
 func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	b.SendMessage(ctx, &bot.SendMessageParams{
+
+	textContent := update.Message.Text
+
+	if len(strings.Fields(textContent)) == 1 {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      "Use /rmSub `url`",
+			ParseMode: models.ParseModeMarkdown,
+		})
+		return
+	}
+
+	feedID, getFeedErr := db.GetFeedID(strings.Fields(textContent)[1])
+
+	if getFeedErr != nil {
+		log.Println("Error querying the database for feed")
+	}
+
+	unsubErr := db.Unsubscribe(update.Message.Chat.ID, feedID)
+
+	if unsubErr != nil {
+		log.Println("Error updating the db for subsubbing")
+	}
+
+	_, sendErr := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		Text:      bot.EscapeMarkdown(update.Message.From.FirstName),
 		ParseMode: models.ParseModeMarkdown,
 	})
+
+	if sendErr != nil {
+		log.Println("Error sending message to user")
+	}
 }
 
 func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
