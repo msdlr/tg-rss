@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"tg-rss/config"
+	"tg-rss/internal/db"
+	"tg-rss/internal/rss"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -32,7 +34,7 @@ func Start() {
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/addSub", bot.MatchTypePrefix, handleAddCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/rmSub", bot.MatchTypeExact, handleRmCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/rmSub", bot.MatchTypePrefix, handleRmCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/listSubs", bot.MatchTypeExact, handleListCommand)
 
 	b.Start(ctx)
@@ -134,9 +136,14 @@ func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Println("Error updating the db for subsubbing")
 	}
 
+	feed, _ := db.GetFeedByURL(strings.Fields(textContent)[1])
+
+	msg := "Sucessfully removed " + feed.Title + " (" + strings.Fields(textContent)[1] + ") from the list"
+	strings.ReplaceAll(msg, "\n", "")
+
 	_, sendErr := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      bot.EscapeMarkdown(update.Message.From.FirstName),
+		Text:      bot.EscapeMarkdown(msg),
 		ParseMode: models.ParseModeMarkdown,
 	})
 
