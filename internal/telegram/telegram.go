@@ -28,11 +28,38 @@ func Start() {
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/addSub", bot.MatchTypeExact, handleAddCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/rmSub", bot.MatchTypeExact, handleRmCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/listSubs", bot.MatchTypeExact, handleListCommand)
 
 	b.Start(ctx)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		ParseMode: models.ParseModeMarkdown,
+	})
+}
+
+func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		ParseMode: models.ParseModeMarkdown,
+	})
+}
+
+func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		ParseMode: models.ParseModeMarkdown,
+	})
+}
+
+func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
