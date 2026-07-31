@@ -79,11 +79,7 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:    update.Message.Chat.ID,
-		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
-		ParseMode: models.ParseModeMarkdown,
-	})
+	SendMessageMarkdown(ctx, b, update, "Hello, *"+bot.EscapeMarkdown(update.Message.From.FirstName)+"*")
 }
 
 func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -91,11 +87,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	textContent := update.Message.Text
 
 	if len(strings.Fields(textContent)) == 1 {
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:    update.Message.Chat.ID,
-			Text:      "Use /sub `url`",
-			ParseMode: models.ParseModeMarkdown,
-		})
+		SendMessageMarkdown(ctx, b, update, "Use /sub `url`")
 		return
 	}
 
@@ -104,11 +96,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	feedTitle, err := rss.GetRSSFeedTitle(url)
 
 	if err != nil {
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:    update.Message.Chat.ID,
-			Text:      "Error retrieving feed title for ``" + url + "``",
-			ParseMode: models.ParseModeMarkdown,
-		})
+		SendMessageMarkdown(ctx, b, update, "Error retrieving feed title for ``"+url+"``")
 		return
 	}
 
@@ -142,11 +130,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:    update.Message.Chat.ID,
-		Text:      "Sucessfully subbed",
-		ParseMode: models.ParseModeMarkdown,
-	})
+	SendMessageMarkdown(ctx, b, update, "Subscribed")
 }
 
 func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -154,11 +138,7 @@ func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	textContent := update.Message.Text
 
 	if len(strings.Fields(textContent)) == 1 {
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:    update.Message.Chat.ID,
-			Text:      "Use /unsub `url`",
-			ParseMode: models.ParseModeMarkdown,
-		})
+		SendMessageMarkdown(ctx, b, update, "Use /unsub `url`")
 		return
 	}
 
@@ -179,15 +159,7 @@ func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	msg := "Sucessfully removed " + feed.Title + " (" + strings.Fields(textContent)[1] + ") from the list"
 	strings.ReplaceAll(msg, "\n", "")
 
-	_, sendErr := b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:    update.Message.Chat.ID,
-		Text:      bot.EscapeMarkdown(msg),
-		ParseMode: models.ParseModeMarkdown,
-	})
-
-	if sendErr != nil {
-		log.Println("Error sending message to user")
-	}
+	SendMessageMarkdown(ctx, b, update, msg)
 }
 
 func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -195,12 +167,9 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	feeds, _ := db.GetUserFeeds(update.Message.Chat.ID)
 
 	if len(feeds) == 0 {
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:    update.Message.Chat.ID,
-			Text:      "No subscriptions found",
-			ParseMode: models.ParseModeMarkdown,
-		})
+		SendMessageMarkdown(ctx, b, update, "No subscriptions found")
 		return
+
 	}
 
 	var msg string = "Your feeds (" + strconv.Itoa(len(feeds)) + "):\n"
@@ -209,9 +178,13 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		msg += "- " + f.Title + " (" + f.URL + ")\n"
 	}
 
+	SendMessageMarkdown(ctx, b, update, msg)
+}
+
+func SendMessageMarkdown(ctx context.Context, b *bot.Bot, update *models.Update, msg string) {
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      bot.EscapeMarkdown(msg),
+		Text:      msg,
 		ParseMode: models.ParseModeMarkdown,
 	})
 
