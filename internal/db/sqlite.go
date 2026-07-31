@@ -123,9 +123,9 @@ func Unsubscribe(chatID int64, feedID int64) error {
 }
 
 // GetUserFeeds returns all feeds a user is subscribed to
-func GetUserFeeds(chatID int64) ([]string, error) {
+func GetUserFeeds(chatID int64) ([]Feed, error) {
 	query := `
-    SELECT f.url
+    SELECT f.id, f.url, f.title
     FROM feeds f
     JOIN subscriptions s ON s.feed_id = f.id
     WHERE s.chat_id = ?`
@@ -136,15 +136,15 @@ func GetUserFeeds(chatID int64) ([]string, error) {
 	}
 	defer rows.Close()
 
-	var urls []string
+	var feeds []Feed
 	for rows.Next() {
-		var url string
-		if err := rows.Scan(&url); err != nil {
+		var feed Feed
+		if err := rows.Scan(&feed.ID, &feed.URL, &feed.Title); err != nil {
 			return nil, err
 		}
-		urls = append(urls, url)
+		feeds = append(feeds, feed)
 	}
-	return urls, rows.Err()
+	return feeds, rows.Err()
 }
 
 // GetFeedSubscribers returns all chat IDs subscribed to a feed
