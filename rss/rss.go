@@ -83,7 +83,7 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 			lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
 
-			if lastTimestamp.Before(time.Now()) {
+			if newArticle.Timestamp.Before(lastTimestamp) {
 				oldPosts++
 				if oldPosts > old {
 					break
