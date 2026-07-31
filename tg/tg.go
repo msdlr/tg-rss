@@ -92,43 +92,44 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	url := strings.Fields(textContent)[1]
+	for _, url := range strings.Fields(textContent)[1:] {
 
-	feedTitle, err := rss.GetRSSFeedTitle(url)
+		feedTitle, err := rss.GetRSSFeedTitle(url)
 
-	if err != nil {
-		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
-		return
-	}
-
-	// Add the chatID to the database
-	if update.Message.Chat.Type == "private" {
-		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Username)
 		if err != nil {
-			log.Println("Error saving user")
+			SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
 			return
 		}
-	} else {
-		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Title)
-		if err != nil {
-			log.Println("Error group chat")
+
+		// Add the chatID to the database
+		if update.Message.Chat.Type == "private" {
+			err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Username)
+			if err != nil {
+				log.Println("Error saving user")
+				return
+			}
+		} else {
+			err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Title)
+			if err != nil {
+				log.Println("Error group chat")
+				return
+			}
+		}
+
+		// Add the feed to the database
+		feedID, feedErr := db.AddFeed(url, feedTitle)
+		if feedErr != nil {
+			log.Println("Error adding feed")
 			return
 		}
-	}
 
-	// Add the feed to the database
-	feedID, feedErr := db.AddFeed(url, feedTitle)
-	if feedErr != nil {
-		log.Println("Error adding feed")
-		return
-	}
+		// Cross the user and the feed
+		subErr := db.Subscribe(update.Message.Chat.ID, feedID)
 
-	// Cross the user and the feed
-	subErr := db.Subscribe(update.Message.Chat.ID, feedID)
-
-	if subErr != nil {
-		log.Println("Error adding subscription")
-		return
+		if subErr != nil {
+			log.Println("Error adding subscription")
+			return
+		}
 	}
 
 	SendMessageMarkdown(update.Message.Chat.ID, "Subscribed")
