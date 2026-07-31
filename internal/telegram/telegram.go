@@ -15,6 +15,8 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
+var b *bot.Bot
+
 func Start() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -25,7 +27,8 @@ func Start() {
 
 	botfatherAPI := config.Configs.TelegramToken
 
-	b, err := bot.New(botfatherAPI, opts...)
+	var err error
+	b, err = bot.New(botfatherAPI, opts...)
 	if nil != err {
 		// panics for the sake of simplicity.
 		// you should handle this error properly in your code.
@@ -180,5 +183,27 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err != nil {
 		log.Println("Failed to send message")
 		log.Println(err)
+	}
+}
+
+func SendMessage(chatID int64, msg string) {
+	// Check if bot is initialized
+	if b == nil {
+		log.Println("Bot not initialized")
+		return
+	}
+
+	// Use context.Background() with a timeout
+	ctx := context.Background()
+
+	// Send the message
+	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: chatID,
+		Text:   msg,
+	})
+
+	if err != nil {
+		log.Printf("Failed to send message to chat %d: %v", chatID, err)
+		return
 	}
 }
