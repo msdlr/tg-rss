@@ -100,13 +100,13 @@ func AddFeed(url, title string) (int64, error) {
 }
 
 // GetFeedID returns feed ID by URL, or 0 if not found
-func GetFeedID(url string) error {
+func GetFeedID(url string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT id FROM feeds WHERE url = ?", url).Scan(&id)
 	if err == sql.ErrNoRows {
-		return nil
+		return 0, nil
 	}
-	return err
+	return id, err
 }
 
 // Subscribe adds a subscription for a user to a feed
@@ -117,7 +117,7 @@ func Subscribe(chatID int64, feedID int64) error {
 }
 
 // Unsubscribe removes a subscription
-func Unsubscribe(chatID int64, feedID string) error {
+func Unsubscribe(chatID int64, feedID int64) error {
 	_, err := db.Exec(`DELETE FROM subscriptions WHERE chat_id = ? AND feed_id = ?`, chatID, feedID)
 	return err
 }
