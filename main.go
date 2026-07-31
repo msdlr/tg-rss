@@ -5,7 +5,7 @@ import (
 	"tg-rss/config"
 	"tg-rss/internal/db"
 	"tg-rss/internal/rss"
-	"tg-rss/internal/telegram"
+	"tg-rss/internal/tg"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -28,7 +28,7 @@ func rssLoop() {
 			arts := rss.GetArticlesForUser(user.ChatID)
 
 			if len(arts) > 0 {
-				telegram.SendMessage(user.ChatID, rss.FormatNews(arts))
+				tg.SendMessage(user.ChatID, rss.FormatNews(arts))
 			}
 		}
 
@@ -40,7 +40,7 @@ func main() {
 	config.LoadConfig()
 	db.InitDB("db.sqlite")
 
-	go telegram.Start()
+	go tg.Start()
 	time.Sleep(1 * time.Second)
 	go rssLoop()
 
