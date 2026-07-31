@@ -1,12 +1,48 @@
 package main
 
 import (
+	"log"
 	"tg-rss/config"
+	"tg-rss/internal/db"
+	"tg-rss/internal/rss"
 	"tg-rss/internal/telegram"
+	"time"
+
+	"github.com/mmcdole/gofeed"
 )
+
+func rssLoop() {
+	timeDelta := time.Duration(uint64(config.Configs.UpdatePeriodMinutes)) * time.Minute
+	rss.FeedParser = gofeed.NewParser()
+
+	for {
+		log.Println("Reading RSS feeds...")
+
+		users, err := db.GetAllUsers()
+
+		if err != nil {
+			log.Println("Error fetching users:", err)
+		}
+
+		for _, user := range users {
+			arts := rss.GetArticlesForUser(user.ChatID)
+
+			if len(arts) > 0 {
+				telegram.SendMessage(user.ChatID, rss.FormatNews(arts))
+			}
+		}
+
+		time.Sleep(timeDelta)
+	}
+}
 
 func main() {
 	config.LoadConfig()
+	db.InitDB("db.sqlite")
 
-	telegram.Start()
+	go telegram.Start()
+	time.Sleep(1 * time.Second)
+	go rssLoop()
+
+	select {}
 }
