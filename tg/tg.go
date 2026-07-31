@@ -62,8 +62,8 @@ func Start() {
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleAddCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleRmCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleSubCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 
@@ -83,7 +83,7 @@ func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 	SendMessageMarkdown(ctx, b, update, "Hello, *"+bot.EscapeMarkdown(update.Message.From.FirstName)+"*")
 }
 
-func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	textContent := update.Message.Text
 
@@ -134,7 +134,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	SendMessageMarkdown(ctx, b, update, "Subscribed")
 }
 
-func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	textContent := update.Message.Text
 
