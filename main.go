@@ -9,5 +9,4 @@ func main() {
 	config.LoadConfig()
 
 	telegram.Start()
-	telegram.QueryLoop()
 }

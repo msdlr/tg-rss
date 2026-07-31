@@ -1,56 +1,41 @@
 package telegram
 
 import (
+	"context"
+	"os"
+	"os/signal"
 	"tg-rss/config"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
-var upChan tgbotapi.UpdatesChannel
-var bot *tgbotapi.BotAPI
-
 func Start() {
-	var err error
-	bot, err = tgbotapi.NewBotAPI(config.Configs.TelegramToken)
-	if err != nil {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	opts := []bot.Option{
+		bot.WithDefaultHandler(handleStartCommand),
+	}
+
+	botfatherAPI := config.Configs.TelegramToken
+
+	b, err := bot.New(botfatherAPI, opts...)
+	if nil != err {
+		// panics for the sake of simplicity.
+		// you should handle this error properly in your code.
 		panic(err)
 	}
 
-	updateConfig := tgbotapi.NewUpdate(0)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
 
-	updateConfig.Timeout = 30
-
-	// Start polling Telegram for updates.
-	c, chanErr := bot.GetUpdatesChan(updateConfig)
-
-	upChan = c
-
-	if chanErr != nil {
-		panic(err)
-	}
+	b.Start(ctx)
 }
 
-func QueryLoop() {
-
-	for update := range upChan {
-		if update.Message == nil { // ignore any non-Message updates
-			continue
-		}
-
-		if !update.Message.IsCommand() { // ignore any non-command Messages
-			continue
-		}
-
-		switch update.Message.Command() {
-		case "start":
-			handleStartCommand(*update.Message)
-		}
-	}
-
-}
-
-func handleStartCommand(inMsg tgbotapi.Message) {
-	outMsg := tgbotapi.NewMessage(inMsg.Chat.ID, "")
-	outMsg.Text = "/start called"
-	bot.Send(outMsg)
+func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		ParseMode: models.ParseModeMarkdown,
+	})
 }
