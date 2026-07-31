@@ -28,7 +28,7 @@ func Start() {
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/addSub", bot.MatchTypeExact, handleAddCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/addSub", bot.MatchTypePrefix, handleAddCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/rmSub", bot.MatchTypeExact, handleRmCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/listSubs", bot.MatchTypeExact, handleListCommand)
 
@@ -44,9 +44,64 @@ func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 }
 
 func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+
+	textContent := update.Message.Text
+
+	if len(strings.Fields(textContent)) == 1 {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      "Use /addSub `url`",
+			ParseMode: models.ParseModeMarkdown,
+		})
+		return
+	}
+
+	url := strings.Fields(textContent)[1]
+
+	feedTitle, err := rss.GetRSSFeedTitle(url)
+
+	if err != nil {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      "Error retrieving feed title for ``" + url + "``",
+			ParseMode: models.ParseModeMarkdown,
+		})
+		return
+	}
+
+	// Add the chatID to the database
+	if update.Message.Chat.Type == "private" {
+		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Username)
+		if err != nil {
+			fmt.Println("Error saving user")
+			return
+		}
+	} else {
+		err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Title)
+		if err != nil {
+			fmt.Println("Error group chat")
+			return
+		}
+	}
+
+	// Add the feed to the database
+	feedID, feedErr := db.AddFeed(url, feedTitle)
+	if feedErr != nil {
+		fmt.Println("Error adding feed")
+		return
+	}
+
+	// Cross the user and the feed
+	subErr := db.Subscribe(update.Message.Chat.ID, feedID)
+
+	if subErr != nil {
+		fmt.Println("Error adding subscription")
+		return
+	}
+
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "*",
+		Text:      "Sucessfully subbed",
 		ParseMode: models.ParseModeMarkdown,
 	})
 }
