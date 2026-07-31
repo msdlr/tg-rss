@@ -2,8 +2,11 @@ package rss
 
 import (
 	"encoding/xml"
+	"fmt"
+	"html"
 	"log"
 	"net/http"
+	"strings"
 	"tg-rss/config"
 	"tg-rss/db"
 	"time"
@@ -92,20 +95,32 @@ func filterOldArticles(newsIn []Article) (newsOut []Article) {
 	return
 }
 
-func FormatNews(news []Article) string {
-
-	newsString := ""
+func FormatNewsHTML(news []Article) string {
+	var b strings.Builder
 
 	prevFeed := ""
 
 	for _, art := range news {
 		if prevFeed != art.FeedTitle {
-			newsString += "**" + art.FeedTitle + "**\n"
+			if prevFeed != "" {
+				b.WriteByte('\n')
+			}
+
+			fmt.Fprintf(&b, "<b>%s</b>\n", html.EscapeString(art.FeedTitle))
 			prevFeed = art.FeedTitle
 		}
 
-		newsString += "- " + art.Title + " (" + art.URL + ")\n"
+		if art.Title == "" {
+			art.Title = art.URL
+		}
+
+		fmt.Fprintf(
+			&b,
+			"• <a href=\"%s\">%s</a>\n",
+			html.EscapeString(art.URL),
+			html.EscapeString(art.Title),
+		)
 	}
 
-	return newsString
+	return b.String()
 }

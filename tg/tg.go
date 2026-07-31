@@ -219,8 +219,9 @@ func SendMessage(chatID int64, msg string) {
 
 	// Send the message
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: chatID,
-		Text:   msg,
+		ChatID:    chatID,
+		Text:      msg,
+		ParseMode: models.ParseModeHTML,
 	})
 
 	if err != nil {

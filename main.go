@@ -25,7 +25,7 @@ func rssLoop() {
 			arts := rss.GetArticlesForUser(user.ChatID)
 
 			if len(arts) > 0 {
-				tg.SendMessage(user.ChatID, rss.FormatNews(arts))
+				tg.SendMessage(user.ChatID, rss.FormatNewsHTML(arts))
 			}
 		}
 
