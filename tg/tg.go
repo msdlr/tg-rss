@@ -25,20 +25,41 @@ func Start() {
 		bot.WithDefaultHandler(handleStartCommand),
 	}
 
-	botfatherAPI := config.GetTgToken()
-
 	var err error
-	b, err = bot.New(botfatherAPI, opts...)
-	if nil != err {
-		// panics for the sake of simplicity.
-		// you should handle this error properly in your code.
+	b, err = bot.New(config.GetTgToken(), opts...)
+	if err != nil {
+		panic(err)
+	}
+
+	// Register commands shown in the Telegram client.
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{
+				Command:     "start",
+				Description: "Show help and usage",
+			},
+			{
+				Command:     "sub",
+				Description: "Subscribe to an RSS feed",
+			},
+			{
+				Command:     "unsub",
+				Description: "Remove an RSS subscription",
+			},
+			{
+				Command:     "list",
+				Description: "List your RSS subscriptions",
+			},
+		},
+	})
+	if err != nil {
 		panic(err)
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/addSub", bot.MatchTypePrefix, handleAddCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/rmSub", bot.MatchTypePrefix, handleRmCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/listSubs", bot.MatchTypeExact, handleListCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleAddCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleRmCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 
 	b.Start(ctx)
 }
@@ -58,7 +79,7 @@ func handleAddCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if len(strings.Fields(textContent)) == 1 {
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:    update.Message.Chat.ID,
-			Text:      "Use /addSub `url`",
+			Text:      "Use /sub `url`",
 			ParseMode: models.ParseModeMarkdown,
 		})
 		return
@@ -121,7 +142,7 @@ func handleRmCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if len(strings.Fields(textContent)) == 1 {
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:    update.Message.Chat.ID,
-			Text:      "Use /rmSub `url`",
+			Text:      "Use /unsub `url`",
 			ParseMode: models.ParseModeMarkdown,
 		})
 		return
