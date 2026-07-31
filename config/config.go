@@ -4,15 +4,20 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
-var Configs Config
+var updatePeriod time.Duration = time.Hour
+var telegramToken string = "your-token-here"
 
-type Config struct {
-	TelegramToken       string
-	UpdatePeriodMinutes uint8
+func GetUpdatePeriod() time.Duration {
+	return updatePeriod
+}
+
+func GetTgToken() string {
+	return telegramToken
 }
 
 func LoadConfig() {
@@ -21,12 +26,10 @@ func LoadConfig() {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	Configs.TelegramToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	telegramToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	period, err := strconv.Atoi(os.Getenv("UPDATE_PERIOD_MINUTES"))
 	if err != nil {
-		// Handle error - environment variable not set or invalid
-		period = 5 // default value
-	} else {
-		Configs.UpdatePeriodMinutes = uint8(period)
+		period = 30
 	}
+	updatePeriod = time.Duration(period) * time.Minute
 }

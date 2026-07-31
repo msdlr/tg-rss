@@ -12,7 +12,6 @@ import (
 )
 
 func rssLoop() {
-	timeDelta := time.Duration(uint64(config.Configs.UpdatePeriodMinutes)) * time.Minute
 	rss.FeedParser = gofeed.NewParser()
 
 	for {
@@ -32,7 +31,7 @@ func rssLoop() {
 			}
 		}
 
-		time.Sleep(timeDelta)
+		time.Sleep(config.GetUpdatePeriod())
 	}
 }
 

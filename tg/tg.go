@@ -25,7 +25,7 @@ func Start() {
 		bot.WithDefaultHandler(handleStartCommand),
 	}
 
-	botfatherAPI := config.Configs.TelegramToken
+	botfatherAPI := config.GetTgToken()
 
 	var err error
 	b, err = bot.New(botfatherAPI, opts...)

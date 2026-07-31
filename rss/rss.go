@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"tg-rss/config"
 	"tg-rss/db"
 	"time"
 
@@ -80,7 +81,7 @@ func GetArticlesForUser(userID int64) (news []Article) {
 
 func filterOldArticles(newsIn []Article) (newsOut []Article) {
 	for _, a := range newsIn {
-		if time.Now().Add(-timeDelta).Before(a.Timestamp) {
+		if time.Now().Add(-(config.GetUpdatePeriod())).Before(a.Timestamp) {
 			newsOut = append(newsOut, a)
 		}
 	}
