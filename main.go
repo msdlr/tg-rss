@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"tg-rss/config"
-	"tg-rss/internal/db"
-	"tg-rss/internal/rss"
-	"tg-rss/internal/tg"
+	"tg-rss/db"
+	"tg-rss/rss"
+	"tg-rss/tg"
 	"time"
 
 	"github.com/mmcdole/gofeed"

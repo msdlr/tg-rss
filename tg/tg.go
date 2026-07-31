@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"tg-rss/config"
-	"tg-rss/internal/db"
-	"tg-rss/internal/rss"
+	"tg-rss/db"
+	"tg-rss/rss"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"

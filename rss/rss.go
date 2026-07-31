@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
-	"tg-rss/internal/db"
+	"tg-rss/db"
 	"time"
 
 	"github.com/mmcdole/gofeed"
