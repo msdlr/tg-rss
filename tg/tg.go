@@ -50,6 +50,10 @@ func Start() {
 				Command:     "list",
 				Description: "List your RSS subscriptions",
 			},
+			{
+				Command:     "latest",
+				Description: "Get the latest articles from your subscriptions",
+			},
 		},
 	})
 	if err != nil {
@@ -60,8 +64,18 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleAddCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleRmCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 
 	b.Start(ctx)
+}
+
+func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	user := update.Message.Chat.ID
+	arts := rss.GetArticlesForUser(user, 3)
+
+	if len(arts) > 0 {
+		SendMessage(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
+	}
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
