@@ -80,7 +80,7 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	SendMessageMarkdown(ctx, b, update, "Hello, *"+bot.EscapeMarkdown(update.Message.From.FirstName)+"*")
+	SendMessageMarkdown(update.Message.Chat.ID, "Hello, *"+bot.EscapeMarkdown(update.Message.From.FirstName)+"*")
 }
 
 func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -88,7 +88,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	textContent := update.Message.Text
 
 	if len(strings.Fields(textContent)) == 1 {
-		SendMessageMarkdown(ctx, b, update, "Use /sub `url`")
+		SendMessageMarkdown(update.Message.Chat.ID, "Use /sub `url`")
 		return
 	}
 
@@ -97,7 +97,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	feedTitle, err := rss.GetRSSFeedTitle(url)
 
 	if err != nil {
-		SendMessageMarkdown(ctx, b, update, "Error retrieving feed title for ``"+url+"``")
+		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
 		return
 	}
 
@@ -131,7 +131,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	SendMessageMarkdown(ctx, b, update, "Subscribed")
+	SendMessageMarkdown(update.Message.Chat.ID, "Subscribed")
 }
 
 func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -139,7 +139,7 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 	textContent := update.Message.Text
 
 	if len(strings.Fields(textContent)) == 1 {
-		SendMessageMarkdown(ctx, b, update, "Use /unsub `url`")
+		SendMessageMarkdown(update.Message.Chat.ID, "Use /unsub `url`")
 		return
 	}
 
@@ -160,7 +160,7 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 	msg := "Sucessfully removed " + feed.Title + " (" + strings.Fields(textContent)[1] + ") from the list"
 	strings.ReplaceAll(msg, "\n", "")
 
-	SendMessageMarkdown(ctx, b, update, msg)
+	SendMessageMarkdown(update.Message.Chat.ID, msg)
 }
 
 func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -168,7 +168,7 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	feeds, _ := db.GetUserFeeds(update.Message.Chat.ID)
 
 	if len(feeds) == 0 {
-		SendMessageMarkdown(ctx, b, update, "No subscriptions found")
+		SendMessageMarkdown(update.Message.Chat.ID, "No subscriptions found")
 		return
 
 	}
@@ -188,9 +188,9 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	SendMessageHTML(update.Message.Chat.ID, sb.String())
 }
 
-func SendMessageMarkdown(ctx context.Context, b *bot.Bot, update *models.Update, msg string) {
-	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:    update.Message.Chat.ID,
+func SendMessageMarkdown(chatID int64, msg string) {
+	_, err := b.SendMessage(context.Background(), &bot.SendMessageParams{
+		ChatID:    chatID,
 		Text:      msg,
 		ParseMode: models.ParseModeMarkdown,
 	})
