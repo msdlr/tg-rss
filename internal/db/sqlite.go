@@ -17,6 +17,11 @@ type Feed struct {
 	Title string `json:"title"`
 }
 
+type User struct {
+	ChatID   int64  `json:"chat_id"`
+	Username string `json:"username"`
+}
+
 // InitDB creates or loads the database
 func InitDB(dbPath string) error {
 	// Ensure directory exists
@@ -190,4 +195,24 @@ func GetFeedSubscribers(feedID int64) ([]int64, error) {
 		chatIDs = append(chatIDs, chatID)
 	}
 	return chatIDs, rows.Err()
+}
+
+func GetAllUsers() ([]User, error) {
+	query := `SELECT chat_id, username FROM users`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ChatID, &user.Username); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, rows.Err()
 }
