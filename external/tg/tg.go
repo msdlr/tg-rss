@@ -60,6 +60,10 @@ func Start() {
 				Command:     "timing",
 				Description: "Get the time for the last and next query",
 			},
+			{
+				Command:     "pull",
+				Description: "Get the updates now (last " + config.GetUpdatePeriod().String() + ")",
+			},
 		},
 	})
 	if err != nil {
@@ -73,8 +77,19 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
 
 	b.Start(ctx)
+}
+
+func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	msg := rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0))
+
+	if msg == "" {
+		msg = "No news for " + config.GetUpdatePeriod().String()
+	}
+
+	SendMessageHTML(update.Message.Chat.ID, msg)
 }
 
 func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
