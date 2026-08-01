@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"time"
