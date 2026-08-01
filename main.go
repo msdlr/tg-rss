@@ -13,7 +13,7 @@ func rssLoop() {
 	rss.InitFeedParser()
 
 	for {
-		log.Println("Reading RSS feeds...")
+		wTimeStart := time.Now()
 
 		users, err := db.GetAllUsers()
 
@@ -28,6 +28,9 @@ func rssLoop() {
 				tg.SendMessageHTML(user.ChatID, rss.FormatNewsHTML(arts))
 			}
 		}
+		wTimeEnd := time.Now()
+
+		log.Println("Read all feeds in " + (wTimeEnd.Sub(wTimeStart)).String())
 
 		time.Sleep(config.GetUpdatePeriod())
 	}
