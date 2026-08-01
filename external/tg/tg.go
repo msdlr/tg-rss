@@ -55,7 +55,7 @@ func Start() {
 			},
 			{
 				Command:     "latest",
-				Description: "Get the latest articles from your subscriptions",
+				Description: "Get the latest " + strconv.Itoa(int(config.GetMaxOldArticles())) + " articles from each subscription",
 			},
 			{
 				Command:     "timing",
