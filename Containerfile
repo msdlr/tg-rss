@@ -12,6 +12,5 @@ RUN apk add --no-cache sqlite-libs
 WORKDIR /app
 
 COPY --from=builder /app/tg-rss .
-RUN chown -R tgrss:tgrss /app
 
 CMD ["./tg-rss"]
