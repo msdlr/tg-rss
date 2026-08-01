@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"tg-rss/config"
-	"tg-rss/db"
-	"tg-rss/rss"
-	"tg-rss/tg"
+	"tg-rss/external/db"
+	"tg-rss/external/rss"
+	"tg-rss/external/tg"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func rssLoop() {
 
 func main() {
 	config.LoadConfig()
-	db.InitDB("db.sqlite")
+	db.InitDB("db/db.sqlite")
 
 	go tg.Start()
 	time.Sleep(1 * time.Second)

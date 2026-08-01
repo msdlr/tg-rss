@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"tg-rss/config"
-	"tg-rss/db"
+	"tg-rss/external/db"
 	"time"
 
 	"github.com/mmcdole/gofeed"

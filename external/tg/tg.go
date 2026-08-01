@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"strings"
 	"tg-rss/config"
-	"tg-rss/db"
-	"tg-rss/rss"
+	"tg-rss/external/db"
+	"tg-rss/external/rss"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
