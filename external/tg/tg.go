@@ -168,9 +168,15 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 			log.Println("Error adding subscription")
 			return
 		}
-	}
 
-	SendMessageMarkdown(update.Message.Chat.ID, "Subscribed")
+		msg := fmt.Sprintf(
+			`Subscribed to <a href="%s">%s</a>`,
+			html.EscapeString(url),
+			html.EscapeString(feedTitle),
+		)
+
+		SendMessageHTML(update.Message.Chat.ID, msg)
+	}
 }
 
 func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
