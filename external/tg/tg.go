@@ -102,7 +102,7 @@ func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 
 func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	user := update.Message.Chat.ID
-	arts := rss.GetArticlesForUser(user, 3)
+	arts := rss.GetArticlesForUser(user, config.GetMaxOldArticles())
 
 	if len(arts) > 0 {
 		SendMessageHTML(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
