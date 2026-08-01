@@ -11,6 +11,11 @@ import (
 
 var updatePeriod time.Duration = time.Hour
 var telegramToken string = "your-token-here"
+var maxOldArticles uint = 3
+
+func GetMaxOldArticles() uint {
+	return maxOldArticles
+}
 
 func GetUpdatePeriod() time.Duration {
 	return updatePeriod
@@ -32,4 +37,8 @@ func LoadConfig() {
 		period = 30
 	}
 	updatePeriod = time.Duration(period) * time.Minute
+
+	// Max old messages when calling /latest
+	old, _ := strconv.Atoi(os.Getenv("MAX_OLD_ARTICLES"))
+	maxOldArticles = uint(old)
 }
