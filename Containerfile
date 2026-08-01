@@ -9,13 +9,9 @@ FROM alpine:3.24
 
 RUN apk add --no-cache sqlite-libs
 
-RUN addgroup -g 1001 -S tgrss && \
-    adduser -u 1001 -S tgrss -G tgrss
 WORKDIR /app
 
 COPY --from=builder /app/tg-rss .
 RUN chown -R tgrss:tgrss /app
-
-USER tgrss
 
 CMD ["./tg-rss"]
