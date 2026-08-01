@@ -11,6 +11,7 @@ import (
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -55,6 +56,10 @@ func Start() {
 				Command:     "latest",
 				Description: "Get the latest articles from your subscriptions",
 			},
+			{
+				Command:     "timing",
+				Description: "Get the time for the last and next query",
+			},
 		},
 	})
 	if err != nil {
@@ -67,8 +72,17 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
 
 	b.Start(ctx)
+}
+
+func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	// lastRead := bot.EscapeMarkdown(rss.GetlastQuery().Format("2006/01/02 15:04:05"))
+	diff := bot.EscapeMarkdown((time.Since(rss.GetlastQuery())).String())
+	next := bot.EscapeMarkdown(time.Duration((time.Until(rss.GetlastQuery().Add(config.GetUpdatePeriod())))).String())
+	msg := "Feeds last read " + diff + " ago, next in " + next
+	SendMessageMarkdown(update.Message.Chat.ID, msg)
 }
 
 func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update) {

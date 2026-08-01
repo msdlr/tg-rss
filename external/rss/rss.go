@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"time"
@@ -24,6 +25,15 @@ type Article struct {
 
 var feedParser *gofeed.Parser
 var timeDelta time.Duration
+var lastQuery time.Time
+
+func SetlastQuery() {
+	lastQuery = time.Now()
+}
+
+func GetlastQuery() time.Time {
+	return lastQuery
+}
 
 func InitFeedParser() {
 	feedParser = gofeed.NewParser()

@@ -13,6 +13,7 @@ func rssLoop() {
 	rss.InitFeedParser()
 
 	for {
+		rss.SetlastQuery()
 		wTimeStart := time.Now()
 
 		users, err := db.GetAllUsers()
