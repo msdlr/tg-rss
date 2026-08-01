@@ -62,6 +62,7 @@ func Start() {
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, handleStartCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleSubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
@@ -80,7 +81,15 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	SendMessageMarkdown(update.Message.Chat.ID, "Hello, *"+bot.EscapeMarkdown(update.Message.From.FirstName)+"*")
+	helpMessage := `Available commands:
+
+• <b>/start</b> — Show this help message
+• <b>/sub</b> <code>RSS_URL</code> — Subscribe to an RSS feed
+• <b>/unsub</b> <code>RSS_URL</code> — Remove an RSS subscription
+• <b>/list</b> — List your RSS subscriptions
+• <b>/latest</b> — Get the latest articles from your subscriptions`
+
+	SendMessageHTML(update.Message.Chat.ID, helpMessage)
 }
 
 func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
