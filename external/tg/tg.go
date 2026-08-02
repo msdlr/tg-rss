@@ -262,7 +262,7 @@ func handleEmptyUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Upd
 	for _, feed := range feeds {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{
-				Text:         "❌ " + feed.Title,
+				Text:         feed.Title,
 				CallbackData: fmt.Sprintf("unsub:%d", feed.ID),
 			},
 		})
