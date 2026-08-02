@@ -170,14 +170,31 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 	SetlastQuery()
 	wTimeStart := time.Now()
 
+	var wg sync.WaitGroup
+	wg.Add(len(users))
+	msgChan := make(chan UpdateMsg)
+
 	for _, user := range users {
-		arts := GetArticlesForUser(user.ChatID, 0)
+		go func(wg *sync.WaitGroup, c chan<- UpdateMsg) {
+			defer wg.Done()
+			arts := GetArticlesForUser(user.ChatID, 0)
 
-		if len(arts) > 0 {
-			messages = append(messages, UpdateMsg{user.ChatID, FormatNewsHTML(arts)})
-		}
+			if len(arts) > 0 {
+				msg := UpdateMsg{user.ChatID, FormatNewsHTML(arts)}
+				c <- msg
+			}
 
-		log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
+		}(&wg, msgChan)
+	}
+
+	go func() {
+		wg.Wait()
+		close(msgChan)
+	}()
+
+	log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
+	for msg := range msgChan {
+		messages = append(messages, msg)
 	}
 
 	return
