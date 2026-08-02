@@ -75,6 +75,7 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, handleStartCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleSubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "unsub:", bot.MatchTypePrefix, handleUnsubCallback)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
@@ -185,7 +186,7 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 	textContent := update.Message.Text
 
 	if len(strings.Fields(textContent)) == 1 {
-		SendMessageMarkdown(update.Message.Chat.ID, "Use /unsub `url`")
+		handleEmptyUnsubCommand(ctx, b, update)
 		return
 	}
 
@@ -242,6 +243,84 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	SendMessageHTML(update.Message.Chat.ID, sb.String())
+}
+
+func handleEmptyUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	feeds, err := db.GetUserFeeds(update.Message.Chat.ID)
+	if err != nil {
+		log.Println("Error getting user feeds:", err)
+		return
+	}
+
+	if len(feeds) == 0 {
+		SendMessageMarkdown(update.Message.Chat.ID, "No subscriptions found")
+		return
+	}
+
+	keyboard := make([][]models.InlineKeyboardButton, 0, len(feeds))
+
+	for _, feed := range feeds {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{
+				Text:         feed.Title,
+				CallbackData: fmt.Sprintf("unsub:%d", feed.ID),
+			},
+		})
+	}
+
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   "Select a feed to unsubscribe:",
+		ReplyMarkup: &models.InlineKeyboardMarkup{
+			InlineKeyboard: keyboard,
+		},
+	})
+	if err != nil {
+		log.Println("Error sending unsubscribe buttons:", err)
+	}
+}
+
+func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update) {
+	message := update.CallbackQuery.Message.Message
+	if message == nil {
+		log.Println("Callback message is inaccessible")
+		return
+	}
+
+	chatID := message.Chat.ID
+
+	feedID, err := strconv.ParseInt(
+		strings.TrimPrefix(update.CallbackQuery.Data, "unsub:"),
+		10,
+		64,
+	)
+	if err != nil {
+		log.Println("Invalid unsubscribe callback:", err)
+		return
+	}
+
+	feeds, err := db.GetUserFeeds(chatID)
+	if err != nil {
+		log.Println("Error getting user feeds:", err)
+		return
+	}
+
+	for _, feed := range feeds {
+		if feed.ID != feedID {
+			continue
+		}
+
+		// Reuse the normal /unsub logic with the selected feed URL.
+		handleUnsubCommand(ctx, b, &models.Update{
+			Message: &models.Message{
+				Chat: models.Chat{ID: chatID},
+				Text: "/unsub " + feed.URL,
+			},
+		})
+		return
+	}
+
+	SendMessageMarkdown(chatID, "Feed not found")
 }
 
 func SendMessageMarkdown(chatID int64, msg string) {
