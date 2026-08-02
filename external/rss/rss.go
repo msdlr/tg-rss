@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"time"
@@ -79,35 +80,56 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 	news = make([]Article, 0)
 
+	artChan := make(chan Article, len(feedEntries))
+
+	var wg sync.WaitGroup
+	wg.Add(len(feedEntries))
+
 	for _, feedEntry := range feedEntries {
-		var oldPosts uint = 0
-		feed, err := feedParser.ParseURL(feedEntry.URL)
-		if err != nil {
-			return make([]Article, 0)
-		}
+		go func(c chan<- Article, wg *sync.WaitGroup) {
+			defer wg.Done()
 
-		for _, article := range feed.Items {
-			newArticle := Article{
-				URL:         article.Link,
-				Timestamp:   *article.PublishedParsed,
-				Title:       article.Title,
-				Description: article.Description,
-				FeedTitle:   feed.Title,
+			var oldPosts uint = 0
+			feed, err := feedParser.ParseURL(feedEntry.URL)
+			if err != nil {
+				log.Println("Error fetching " + feedEntry.URL + err.Error())
 			}
 
-			lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
-
-			if newArticle.Timestamp.Before(lastTimestamp) {
-				oldPosts++
-				if oldPosts > old {
-					break
+			for _, article := range feed.Items {
+				newArticle := Article{
+					URL:         article.Link,
+					Timestamp:   *article.PublishedParsed,
+					Title:       article.Title,
+					Description: article.Description,
+					FeedTitle:   feed.Title,
 				}
+
+				// The oldest timestamp possible
+				lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
+
+				if newArticle.Timestamp.Before(lastTimestamp) {
+					oldPosts++
+					if oldPosts > old {
+						break
+					}
+				}
+
+				c <- newArticle
 			}
 
-			news = append(news, newArticle)
-		}
+		}(artChan, &wg)
 	}
-	return news
+
+	go func() {
+		wg.Wait()
+		close(artChan)
+	}()
+
+	for a := range artChan {
+		news = append(news, a)
+	}
+	return
+
 }
 
 func FormatNewsHTML(news []Article) string {
