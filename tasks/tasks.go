@@ -24,12 +24,16 @@ func StartTasks() {
 	// RSS
 	rss.InitFeedParser()
 	go func() {
+		ticker := time.NewTicker(config.GetUpdatePeriod())
+		defer ticker.Stop()
+
 		for {
 			messages := rss.ReadAllFeeds()
 			for _, message := range messages {
 				tg.SendMessageHTML(message.User, message.FormattedMessage)
 			}
-			time.Sleep(config.GetUpdatePeriod())
+
+			<-ticker.C
 		}
 	}()
 	select {}
