@@ -31,14 +31,23 @@ func LoadConfig() {
 		log.Println("No .env file found, using environment variables")
 	}
 
+	// Bot token
 	telegramToken = os.Getenv("TELEGRAM_BOT_TOKEN")
-	period, err := strconv.Atoi(os.Getenv("UPDATE_PERIOD_MINUTES"))
-	if err != nil {
-		period = 30
+
+	// Update period
+	periodStr := os.Getenv("UPDATE_PERIOD_MINUTES")
+	var period int
+	if periodStr == "" {
+		periodStr = "30"
 	}
+	period, _ = strconv.Atoi(periodStr)
 	updatePeriod = time.Duration(period) * time.Minute
 
 	// Max old messages when calling /latest
-	old, _ := strconv.Atoi(os.Getenv("MAX_OLD_ARTICLES"))
+	maxOlddStr := os.Getenv("MAX_OLD_ARTICLES")
+	if maxOlddStr == "" {
+		maxOlddStr = strconv.Itoa(int(maxOldArticles))
+	}
+	old, _ := strconv.Atoi(maxOlddStr)
 	maxOldArticles = uint(old)
 }

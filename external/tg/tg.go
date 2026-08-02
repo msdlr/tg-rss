@@ -196,21 +196,28 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 		log.Println("Error querying the database for feed")
 	}
 
-	unsubErr := db.Unsubscribe(update.Message.Chat.ID, feedID)
-
-	if unsubErr != nil {
-		log.Println("Error updating the db for subsubbing")
-	}
-
 	feed, _ := db.GetFeedByURL(strings.Fields(textContent)[1])
 
-	msg := fmt.Sprintf(
-		"Unsubscribed from <a href=\"%s\">%s</a>",
-		feed.URL,
-		feed.Title,
-	)
+	if feed != nil {
 
-	SendMessageHTML(update.Message.Chat.ID, msg)
+		unsubErr := db.Unsubscribe(update.Message.Chat.ID, feedID)
+
+		if unsubErr != nil {
+			log.Println("Error updating the db for subsubbing")
+		}
+
+		var sb strings.Builder
+		fmt.Fprintf(
+			&sb,
+			"Unsuscribed from <a href=\"%s\">%s</a>\n",
+			html.EscapeString(feed.URL),
+			html.EscapeString(feed.Title),
+		)
+
+		SendMessageHTML(update.Message.Chat.ID, sb.String())
+	} else {
+		SendMessageMarkdown(update.Message.Chat.ID, "Not subscribed")
+	}
 }
 
 func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
