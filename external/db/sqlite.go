@@ -144,6 +144,10 @@ func Subscribe(chatID int64, feedID int64) error {
 // Unsubscribe removes a subscription
 func Unsubscribe(chatID int64, feedID int64) error {
 	_, err := db.Exec(`DELETE FROM subscriptions WHERE chat_id = ? AND feed_id = ?`, chatID, feedID)
+	db.Exec(`DELETE FROM feeds WHERE id NOT IN (SELECT DISTINCT feed_id FROM subscriptions)`)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
