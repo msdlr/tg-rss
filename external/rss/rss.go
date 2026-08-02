@@ -22,6 +22,11 @@ type Article struct {
 	FeedTitle   string
 }
 
+type UpdateMsg struct {
+	User             int64
+	FormattedMessage string
+}
+
 var feedParser *gofeed.Parser
 var timeDelta time.Duration
 var lastQuery time.Time
@@ -133,4 +138,25 @@ func FormatNewsHTML(news []Article) string {
 	}
 
 	return b.String()
+}
+
+func ReadAllFeeds() (messages []UpdateMsg) {
+	users, err := db.GetAllUsers()
+	if err != nil {
+		log.Println("Error fetching users:", err)
+	}
+	SetlastQuery()
+	wTimeStart := time.Now()
+
+	for _, user := range users {
+		arts := GetArticlesForUser(user.ChatID, 0)
+
+		if len(arts) > 0 {
+			messages = append(messages, UpdateMsg{user.ChatID, FormatNewsHTML(arts)})
+		}
+
+		log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
+	}
+
+	return
 }
