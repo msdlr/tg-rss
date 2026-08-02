@@ -1,2 +1,3 @@
 tg-rss
 .env
+db/sb.sqlite
