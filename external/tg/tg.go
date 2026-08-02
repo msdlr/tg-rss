@@ -12,6 +12,7 @@ import (
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
+	"tg-rss/stats"
 	"time"
 
 	"github.com/go-telegram/bot"
@@ -65,6 +66,10 @@ func Start() {
 				Command:     "pull",
 				Description: "Get the updates now (last " + config.GetUpdatePeriod().String() + ")",
 			},
+			{
+				Command:     "stats",
+				Description: "Get statistics about the bot",
+			},
 		},
 	})
 	if err != nil {
@@ -80,8 +85,13 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/stats", bot.MatchTypeExact, handleStatsCommand)
 
 	b.Start(ctx)
+}
+
+func handleStatsCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	SendMessageHTML(update.Message.Chat.ID, stats.FormatStats())
 }
 
 func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {

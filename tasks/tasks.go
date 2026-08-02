@@ -5,6 +5,7 @@ import (
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
 	"tg-rss/external/tg"
+	"tg-rss/stats"
 	"time"
 )
 
@@ -13,6 +14,7 @@ func InitDatabase() {
 }
 
 func StartTasks() {
+	stats.SetStartUpTime(time.Now())
 	// Read database
 	config.LoadConfig()
 	InitDatabase()
@@ -23,15 +25,19 @@ func StartTasks() {
 
 	// RSS
 	rss.InitFeedParser()
+	timesLooped := 0
 	go func() {
 		ticker := time.NewTicker(config.GetUpdatePeriod())
 		defer ticker.Stop()
 
 		for {
-			messages := rss.ReadAllFeeds()
-			for _, message := range messages {
-				tg.SendMessageHTML(message.User, message.FormattedMessage)
+			if timesLooped != 0 {
+				messages := rss.ReadAllFeeds()
+				for _, message := range messages {
+					tg.SendMessageHTML(message.User, message.FormattedMessage)
+				}
 			}
+			timesLooped++
 
 			<-ticker.C
 		}

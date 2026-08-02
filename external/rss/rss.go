@@ -10,6 +10,7 @@ import (
 	"sync"
 	"tg-rss/config"
 	"tg-rss/external/db"
+	"tg-rss/stats"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -192,7 +193,10 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 		close(msgChan)
 	}()
 
-	log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
+	duration := time.Since(wTimeStart)
+	stats.RecordFeedsPullDuration(duration)
+
+	log.Println("Read all feeds in " + (duration).String())
 	for msg := range msgChan {
 		messages = append(messages, msg)
 	}
