@@ -185,7 +185,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		feedTitle, webURL, err := rss.GetRSSFeedInfo(url)
 
 		if err != nil {
-			SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
+			SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(url)+" is not a valid feed")
 			return
 		}
 
