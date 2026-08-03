@@ -123,10 +123,10 @@ func GetFeedID(url string) (int64, error) {
 }
 
 func GetFeedByURL(url string) (*Feed, error) {
-	query := `SELECT id, feedurl, title FROM feeds WHERE feedurl = ?`
+	query := `SELECT id, feedurl, title, weburl FROM feeds WHERE feedurl = ?`
 
 	var feed Feed
-	err := db.QueryRow(query, url).Scan(&feed.ID, &feed.FeedURL, &feed.Title)
+	err := db.QueryRow(query, url).Scan(&feed.ID, &feed.FeedURL, &feed.Title, &feed.WebURL)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -156,7 +156,7 @@ func Unsubscribe(chatID int64, feedID int64) error {
 // GetUserFeeds returns all feeds a user is subscribed to
 func GetUserFeeds(chatID int64) ([]Feed, error) {
 	query := `
-    SELECT f.id, f.feedurl, f.title
+    SELECT f.id, f.feedurl, f.title, f.weburl
     FROM feeds f
     JOIN subscriptions s ON s.feed_id = f.id
     WHERE s.chat_id = ?`
@@ -170,7 +170,7 @@ func GetUserFeeds(chatID int64) ([]Feed, error) {
 	var feeds []Feed
 	for rows.Next() {
 		var feed Feed
-		if err := rows.Scan(&feed.ID, &feed.FeedURL, &feed.Title); err != nil {
+		if err := rows.Scan(&feed.ID, &feed.FeedURL, &feed.Title, &feed.WebURL); err != nil {
 			return nil, err
 		}
 		feeds = append(feeds, feed)
