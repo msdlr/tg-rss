@@ -90,8 +90,8 @@ func Start() {
 }
 
 func handleSubYTCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	if update.Message.Text == "/subyt" {
-		SendMessageMarkdown(update.Message.Chat.ID, "Usage: /subyt <channel link>")
+	if len(strings.Fields(update.Message.Text)) == 1 {
+		SendMessageHTML(update.Message.Chat.ID, "Usage: /subyt  <code>channel_url</code>")
 		return
 	}
 
