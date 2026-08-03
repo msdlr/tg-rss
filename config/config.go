@@ -12,6 +12,7 @@ import (
 var updatePeriod time.Duration = time.Hour
 var telegramToken string = "your-token-here"
 var maxOldArticles uint = 3
+var telegramBotHandle string = "myTelegramBot"
 
 func GetMaxOldArticles() uint {
 	return maxOldArticles
@@ -25,6 +26,10 @@ func GetTgToken() string {
 	return telegramToken
 }
 
+func GetTelegramBotHandle() string {
+	return telegramBotHandle
+}
+
 func LoadConfig() {
 	err := godotenv.Load()
 	if err != nil {
@@ -33,6 +38,9 @@ func LoadConfig() {
 
 	// Bot token
 	telegramToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+
+	// Bot handle
+	telegramBotHandle = os.Getenv("TELEGRAM_BOT_HANDLE")
 
 	// Update period
 	periodStr := os.Getenv("UPDATE_PERIOD_MINUTES")

@@ -90,6 +90,21 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt", bot.MatchTypePrefix, handleSubYTCommand)
 
+	botHandle := config.GetTelegramBotHandle()
+
+	if botHandle != "" {
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/start@"+botHandle, bot.MatchTypeExact, handleStartCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/help@"+botHandle, bot.MatchTypeExact, handleStartCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/sub@"+botHandle, bot.MatchTypePrefix, handleSubCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub@"+botHandle, bot.MatchTypePrefix, handleUnsubCommand)
+		b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "unsub:", bot.MatchTypePrefix, handleUnsubCallback)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/list@"+botHandle, bot.MatchTypeExact, handleListCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/latest@"+botHandle, bot.MatchTypeExact, handleLatestCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/timing@"+botHandle, bot.MatchTypeExact, handleTimingCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/pull@"+botHandle, bot.MatchTypeExact, handlePullCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt@"+botHandle, bot.MatchTypePrefix, handleSubYTCommand)
+	}
+
 	b.Start(ctx)
 }
 
