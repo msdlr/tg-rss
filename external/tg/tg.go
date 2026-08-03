@@ -336,8 +336,6 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		return
 	}
 
-	chatID := message.Chat.ID
-
 	feedID, err := strconv.ParseInt(
 		strings.TrimPrefix(update.CallbackQuery.Data, "unsub:"),
 		10,
@@ -348,7 +346,7 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		return
 	}
 
-	feeds, err := db.GetUserFeeds(chatID)
+	feeds, err := db.GetUserFeeds(message.Chat.ID)
 	if err != nil {
 		log.Println("Error getting user feeds:", err)
 		return
@@ -360,7 +358,7 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		}
 
 		// Unsubscribe
-		if err := db.Unsubscribe(chatID, feed.ID); err != nil {
+		if err := db.Unsubscribe(message.Chat.ID, feed.ID); err != nil {
 			log.Println("Error removing subscription:", err)
 			return
 		}
@@ -380,15 +378,25 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 			})
 		}
 
-		_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
-			ChatID:    chatID,
-			MessageID: message.ID,
-			ReplyMarkup: &models.InlineKeyboardMarkup{
-				InlineKeyboard: keyboard,
-			},
-		})
+		if len(keyboard) == 0 {
+			// No feeds left: remove the keyboard by editing the message
+			_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
+				ChatID:    message.Chat.ID,
+				MessageID: message.ID,
+				Text:      "You have no subscriptions left",
+			})
+		} else {
+			_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+				ChatID:    message.Chat.ID,
+				MessageID: message.ID,
+				ReplyMarkup: &models.InlineKeyboardMarkup{
+					InlineKeyboard: keyboard,
+				},
+			})
+		}
+
 		if err != nil {
-			log.Println("Failed to update keyboard:", err)
+			log.Println("Failed to update message:", err)
 		}
 
 		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
@@ -401,7 +409,7 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		return
 	}
 
-	SendMessageMarkdown(chatID, "Feed not found")
+	SendMessageMarkdown(message.Chat.ID, "Feed not found")
 }
 
 func SendMessageMarkdown(chatID int64, msg string) {
