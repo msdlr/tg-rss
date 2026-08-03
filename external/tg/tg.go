@@ -253,14 +253,15 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>Your feeds (%d):</b>\n", len(feeds))
+	fmt.Fprintf(&sb, "<b>Your subscriptions (%d):</b>\n", len(feeds))
 
 	for _, f := range feeds {
 		fmt.Fprintf(
 			&sb,
-			"• <a href=\"%s\">%s</a>\n",
-			html.EscapeString(f.FeedURL),
+			"• <a href=\"%s\">%s</a> (<a href=\"%s\">feed</a>)\n",
+			html.EscapeString(f.WebURL),
 			html.EscapeString(f.Title),
+			html.EscapeString(f.FeedURL),
 		)
 	}
 
