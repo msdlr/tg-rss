@@ -25,7 +25,7 @@ func Start() {
 	defer cancel()
 
 	opts := []bot.Option{
-		bot.WithDefaultHandler(handleStartCommand),
+		bot.WithDefaultHandler(func(ctx context.Context, b *bot.Bot, update *models.Update) {}),
 	}
 
 	var err error
