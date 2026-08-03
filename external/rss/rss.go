@@ -1,7 +1,6 @@
 package rss
 
 import (
-	"encoding/xml"
 	"fmt"
 	"html"
 	"log"
@@ -45,31 +44,13 @@ func InitFeedParser() {
 	feedParser = gofeed.NewParser()
 }
 
-func GetRSSFeedTitle(url string) (string, error) {
-	resp, err := http.Get(url)
+func GetRSSFeedInfo(feedURL string) (title string, website string, err error) {
+	feed, err := feedParser.ParseURL(feedURL)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	defer resp.Body.Close()
 
-	var title string
-	decoder := xml.NewDecoder(resp.Body)
-	for {
-		token, err := decoder.Token()
-		if err != nil {
-			return "", err
-		}
-
-		switch elem := token.(type) {
-		case xml.StartElement:
-			if elem.Name.Local == "title" {
-				if err := decoder.DecodeElement(&title, &elem); err != nil {
-					return "", err
-				}
-				return title, nil
-			}
-		}
-	}
+	return feed.Title, feed.Link, nil
 }
 
 func GetArticlesForUser(userID int64, old uint) (news []Article) {
@@ -91,9 +72,9 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 			defer wg.Done()
 
 			var oldPosts uint = 0
-			feed, err := feedParser.ParseURL(feedEntry.URL)
+			feed, err := feedParser.ParseURL(feedEntry.FeedURL)
 			if err != nil {
-				log.Println("Error fetching " + feedEntry.URL + err.Error())
+				log.Println("Error fetching " + feedEntry.FeedURL + err.Error())
 			}
 
 			for _, article := range feed.Items {

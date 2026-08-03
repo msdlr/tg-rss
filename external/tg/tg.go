@@ -155,7 +155,8 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	for _, url := range strings.Fields(textContent)[1:] {
 
-		feedTitle, err := rss.GetRSSFeedTitle(url)
+		// feedTitle, err := rss.GetRSSFeedTitle(url)
+		feedTitle, webURL, err := rss.GetRSSFeedInfo(url)
 
 		if err != nil {
 			SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
@@ -178,7 +179,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		}
 
 		// Add the feed to the database
-		feedID, feedErr := db.AddFeed(url, feedTitle)
+		feedID, feedErr := db.AddFeed(url, feedTitle, webURL)
 		if feedErr != nil {
 			log.Println("Error adding feed")
 			return
@@ -231,7 +232,7 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 		fmt.Fprintf(
 			&sb,
 			"Unsuscribed from <a href=\"%s\">%s</a>\n",
-			html.EscapeString(feed.URL),
+			html.EscapeString(feed.FeedURL),
 			html.EscapeString(feed.Title),
 		)
 
@@ -258,7 +259,7 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		fmt.Fprintf(
 			&sb,
 			"• <a href=\"%s\">%s</a>\n",
-			html.EscapeString(f.URL),
+			html.EscapeString(f.FeedURL),
 			html.EscapeString(f.Title),
 		)
 	}
@@ -367,7 +368,7 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 			CallbackQueryID: update.CallbackQuery.ID,
 		})
 
-		msg := fmt.Sprintf(`Unsubscribed from <a href="%s">%s</a>`, feed.URL, feed.Title)
+		msg := fmt.Sprintf(`Unsubscribed from <a href="%s">%s</a>`, feed.FeedURL, feed.Title)
 
 		SendMessageHTML(message.Chat.ID, msg)
 		return
