@@ -42,6 +42,10 @@ func Start() {
 				Description: "Show help and usage",
 			},
 			{
+				Command:     "help",
+				Description: "Show help and usage",
+			},
+			{
 				Command:     "sub",
 				Description: "Subscribe to an RSS feed",
 			},
@@ -133,13 +137,20 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	helpMessage := `Available commands:
+	helpMessage := fmt.Sprintf(`<b>Available commands:</b>
 
-• <b>/start</b> — Show this help message
-• <b>/sub</b> <code>RSS_URL</code> — Subscribe to an RSS feed
-• <b>/unsub</b> <code>RSS_URL</code> — Remove an RSS subscription
-• <b>/list</b> — List your RSS subscriptions
-• <b>/latest</b> — Get the latest articles from your subscriptions`
+• <b>/start</b> - Show this help message
+• <b>/help</b> - Show this help message
+
+• <b>/sub</b> <code>RSS_URL</code> - Subscribe to an RSS feed
+• <b>/subyt</b> <code>CHANNEL_URL</code> - Subscribe to a YouTube channel
+• <b>/unsub</b> <code>RSS_URL</code> - Remove a subscription
+• <b>/unsub</b> - Remove subscriptions (interactive)
+• <b>/list</b> - List your subscriptions
+
+• <b>/latest</b> - Show the latest %d articles from each subscription
+• <b>/pull</b> - Check for updates now (last %s)
+• <b>/timing</b> - Show the last and next scheduled update`, config.GetMaxOldArticles(), time.Duration(config.GetUpdatePeriod()).String())
 
 	SendMessageHTML(update.Message.Chat.ID, helpMessage)
 }
