@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mmcdole/gofeed"
+	gh "golang.org/x/net/html"
 )
 
 type Article struct {
@@ -198,4 +199,51 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 	}
 
 	return
+}
+
+func GetYouTubeRSS(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	doc, err := gh.Parse(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var channelID string
+
+	var walk func(*gh.Node)
+	walk = func(n *gh.Node) {
+		if n.Type == gh.ElementNode && n.Data == "link" {
+			var rel, href string
+			for _, a := range n.Attr {
+				switch a.Key {
+				case "rel":
+					rel = a.Val
+				case "href":
+					href = a.Val
+				}
+			}
+
+			if rel == "canonical" && strings.Contains(href, "/channel/") {
+				channelID = href[strings.LastIndex(href, "/")+1:]
+				return
+			}
+		}
+
+		for c := n.FirstChild; c != nil && channelID == ""; c = c.NextSibling {
+			walk(c)
+		}
+	}
+
+	walk(doc)
+
+	if channelID == "" {
+		return "", fmt.Errorf("channel ID not found")
+	}
+
+	return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID, nil
 }

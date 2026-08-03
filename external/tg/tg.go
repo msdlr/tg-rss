@@ -46,6 +46,10 @@ func Start() {
 				Description: "Subscribe to an RSS feed",
 			},
 			{
+				Command:     "subyt",
+				Description: "Subscribe to an YouTube channel",
+			},
+			{
 				Command:     "unsub",
 				Description: "Remove an RSS subscription",
 			},
@@ -73,15 +77,32 @@ func Start() {
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, handleStartCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleSubCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub ", bot.MatchTypePrefix, handleSubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "unsub:", bot.MatchTypePrefix, handleUnsubCallback)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypeExact, handleLatestCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt", bot.MatchTypePrefix, handleSubYTCommand)
 
 	b.Start(ctx)
+}
+
+func handleSubYTCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message.Text == "/subyt" {
+		SendMessageMarkdown(update.Message.Chat.ID, "Usage: /subyt <channel link>")
+		return
+	}
+
+	channelURL := strings.Fields(update.Message.Text)[1]
+	feedURL, err := rss.GetYouTubeRSS(channelURL)
+	if err != nil {
+		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving RSS feed from channel")
+	} else {
+		update.Message.Text = strings.Replace(update.Message.Text, channelURL, feedURL, 1)
+		handleSubCommand(ctx, b, update)
+	}
 }
 
 func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
