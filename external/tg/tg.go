@@ -331,13 +331,45 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 			continue
 		}
 
-		// Reuse the normal /unsub logic with the selected feed URL.
-		handleUnsubCommand(ctx, b, &models.Update{
-			Message: &models.Message{
-				Chat: models.Chat{ID: chatID},
-				Text: "/unsub " + feed.URL,
+		// Unsubscribe
+		if err := db.Unsubscribe(chatID, feed.ID); err != nil {
+			log.Println("Error removing subscription:", err)
+			return
+		}
+
+		// Rebuild keyboard removing the selected feed
+		var keyboard [][]models.InlineKeyboardButton
+		for _, f := range feeds {
+			if f.ID == feedID {
+				continue
+			}
+
+			keyboard = append(keyboard, []models.InlineKeyboardButton{
+				{
+					Text:         f.Title,
+					CallbackData: "unsub:" + strconv.FormatInt(f.ID, 10),
+				},
+			})
+		}
+
+		_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+			ChatID:    chatID,
+			MessageID: message.ID,
+			ReplyMarkup: &models.InlineKeyboardMarkup{
+				InlineKeyboard: keyboard,
 			},
 		})
+		if err != nil {
+			log.Println("Failed to update keyboard:", err)
+		}
+
+		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+		})
+
+		msg := fmt.Sprintf(`Unsubscribed from <a href="%s">%s</a>`, feed.URL, feed.Title)
+
+		SendMessageHTML(message.Chat.ID, msg)
 		return
 	}
 
