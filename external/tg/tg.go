@@ -189,6 +189,8 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 			return
 		}
 
+		url, _ = rss.SanitizeFeedURL(url)
+
 		// Add the chatID to the database
 		if update.Message.Chat.Type == "private" {
 			err := db.AddUser(update.Message.Chat.ID, update.Message.Chat.Username)

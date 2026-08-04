@@ -5,6 +5,8 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"tg-rss/config"
@@ -227,4 +229,36 @@ func GetYouTubeRSS(url string) (string, error) {
 	}
 
 	return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID, nil
+}
+
+func SanitizeFeedURL(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	u.Scheme = strings.ToLower(u.Scheme)
+	u.Host = strings.ToLower(u.Host)
+	u.Fragment = ""
+
+	// Remove default ports.
+	switch {
+	case u.Scheme == "http" && strings.HasSuffix(u.Host, ":80"):
+		u.Host = strings.TrimSuffix(u.Host, ":80")
+	case u.Scheme == "https" && strings.HasSuffix(u.Host, ":443"):
+		u.Host = strings.TrimSuffix(u.Host, ":443")
+	}
+
+	// Clean path and remove trailing slashes.
+	p := path.Clean(u.Path)
+	if p != "/" {
+		p = strings.TrimRight(p, "/")
+	}
+	u.Path = p
+
+	// Sort query parameters.
+	q := u.Query()
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
 }
