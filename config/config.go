@@ -13,6 +13,7 @@ var updatePeriod time.Duration = time.Hour
 var telegramToken string = "your-token-here"
 var maxOldArticles uint = 3
 var telegramBotHandle string = "myTelegramBot"
+var backupPeriod time.Duration = 24 * time.Hour
 
 func GetMaxOldArticles() uint {
 	return maxOldArticles
@@ -28,6 +29,10 @@ func GetTgToken() string {
 
 func GetTelegramBotHandle() string {
 	return telegramBotHandle
+}
+
+func GetBackupPeriod() time.Duration {
+	return backupPeriod
 }
 
 func LoadConfig() {
@@ -50,6 +55,14 @@ func LoadConfig() {
 	}
 	period, _ = strconv.Atoi(periodStr)
 	updatePeriod = time.Duration(period) * time.Minute
+
+	bkStr := os.Getenv("BACKUP_PERIOD_HOURS")
+	var bk int
+	if bkStr == "" {
+		bkStr = "24"
+	}
+	bk, _ = strconv.Atoi(bkStr)
+	backupPeriod = time.Duration(bk) * time.Hour
 
 	// Max old messages when calling /latest
 	maxOlddStr := os.Getenv("MAX_OLD_ARTICLES")

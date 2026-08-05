@@ -1,12 +1,15 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"os"
 	"path/filepath"
+	"tg-rss/config"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
@@ -221,4 +224,63 @@ func GetAllUsers() ([]User, error) {
 		users = append(users, user)
 	}
 	return users, rows.Err()
+}
+
+func Backup(dbPath, backupPath string) error {
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return err
+	}
+
+	minAge := config.GetBackupPeriod()
+
+	if time.Since(info.ModTime()) > minAge {
+		return nil
+	}
+
+	// Open the destination database.
+	dstDB, err := sql.Open("sqlite3", backupPath)
+	if err != nil {
+		return err
+	}
+	defer dstDB.Close()
+
+	ctx := context.Background()
+
+	srcConn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer srcConn.Close()
+
+	dstConn, err := dstDB.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer dstConn.Close()
+
+	return srcConn.Raw(func(src any) error {
+		return dstConn.Raw(func(dst any) error {
+			srcSQLite := src.(*sqlite3.SQLiteConn)
+			dstSQLite := dst.(*sqlite3.SQLiteConn)
+
+			backup, err := dstSQLite.Backup("main", srcSQLite, "main")
+			if err != nil {
+				return err
+			}
+			defer backup.Finish()
+
+			for {
+				done, err := backup.Step(-1)
+				if err != nil {
+					return err
+				}
+				if done {
+					break
+				}
+			}
+
+			return nil
+		})
+	})
 }

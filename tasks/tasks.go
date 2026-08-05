@@ -13,9 +13,22 @@ func InitDatabase() {
 }
 
 func StartTasks() {
-	// Read database
+	// Read config
 	config.LoadConfig()
+
+	// Initialize database
 	InitDatabase()
+
+	go func() {
+		ticker := time.NewTicker(config.GetBackupPeriod())
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			bkPath := "db/" + time.Now().Format("0601021504") + ".sqlite"
+			db.Backup("db/db.sqlite", bkPath)
+		}
+	}()
 
 	// Start Telegram bot
 	go tg.Start()
