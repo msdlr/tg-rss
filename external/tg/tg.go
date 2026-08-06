@@ -135,11 +135,10 @@ func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 
 func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	// lastRead := bot.EscapeMarkdown(rss.GetlastQuery().Format("2006/01/02 15:04:05"))
-	diff := bot.EscapeMarkdown((time.Since(rss.GetlastQuery())).String())
-	next := bot.EscapeMarkdown(time.Duration((time.Until(rss.GetlastQuery().Add(config.GetUpdatePeriod())))).String())
-	msg := "Feeds last read " + diff + " ago, next in " + next
-	SendMessageMarkdown(update.Message.Chat.ID, msg)
+	lastRead := rss.GetlastQuery()
+	nextRead := rss.GetlastQuery().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())
+	msg := "Feeds last read at " + lastRead.Format("15:04") + ", next at " + nextRead.Format("15:04")
+	SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(msg))
 }
 
 func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
