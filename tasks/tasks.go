@@ -40,6 +40,9 @@ func StartTasks() {
 		ticker := time.NewTicker(config.GetUpdatePeriod())
 		defer ticker.Stop()
 
+		// Wait until the time is a multiple of the update period
+		time.Sleep(time.Until(time.Now().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())))
+
 		for {
 			messages := rss.ReadAllFeeds()
 			for _, message := range messages {
