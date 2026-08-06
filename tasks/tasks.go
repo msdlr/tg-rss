@@ -13,6 +13,7 @@ func InitDatabase() {
 }
 
 func StartTasks() {
+	log.Printf("tg-rss version %s.%s (%s %s)\n", info.GetTag(), info.GetSubversion(), info.GetCommit(), info.GetDate())
 	// Read config
 	config.LoadConfig()
 
