@@ -1,10 +1,12 @@
 package tasks
 
 import (
+	"log"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
 	"tg-rss/external/tg"
+	"tg-rss/info"
 	"time"
 )
 
@@ -13,6 +15,7 @@ func InitDatabase() {
 }
 
 func StartTasks() {
+	log.Printf("tg-rss version %s.%s (%s %s)\n", info.GetTag(), info.GetSubversion(), info.GetCommit(), info.GetDate())
 	// Read config
 	config.LoadConfig()
 
