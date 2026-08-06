@@ -136,7 +136,14 @@ func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	lastRead := rss.GetlastQuery()
-	nextRead := rss.GetlastQuery().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())
+	nextRead := time.Now().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())
+
+	if lastRead.IsZero() {
+		msg := "Feeds not read yet, will read at " + nextRead.Format("15:04")
+		SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(msg))
+		return
+	}
+
 	msg := "Feeds last read at " + lastRead.Format("15:04") + ", next at " + nextRead.Format("15:04")
 	SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(msg))
 }
