@@ -76,7 +76,9 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 			var oldPosts uint = 0
 			feed, err := feedParser.ParseURL(feedEntry.FeedURL)
 			if err != nil {
-				log.Println("Error fetching " + feedEntry.FeedURL + err.Error())
+				// Timeout
+				log.Println("Skipping source " + feedEntry.FeedURL + ": " + err.Error())
+				return
 			}
 
 			for _, article := range feed.Items {
