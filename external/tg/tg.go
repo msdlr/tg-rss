@@ -159,7 +159,7 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	helpMessage := fmt.Sprintf(`tg-rss version %s.%s (%s %s)
+	helpMessage := fmt.Sprintf(`tg-rss version %s (%s)
 	
 	<b>Available commands:</b>
 
@@ -174,7 +174,7 @@ func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 
 • <b>/latest</b> - Show the latest %d articles from each subscription
 • <b>/pull</b> - Check for updates now (last %s)
-• <b>/timing</b> - Show the last and next scheduled update`, info.GetTag(), info.GetSubversion(), info.GetCommit(), info.GetDate(), config.GetMaxOldArticles(), time.Duration(config.GetUpdatePeriod()).String())
+• <b>/timing</b> - Show the last and next scheduled update`, info.GetHead(), info.GetDate(), config.GetMaxOldArticles(), time.Duration(config.GetUpdatePeriod()).String())
 
 	SendMessageHTML(update.Message.Chat.ID, helpMessage)
 }
