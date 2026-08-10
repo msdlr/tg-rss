@@ -233,6 +233,30 @@ func GetYouTubeRSS(url string) (string, error) {
 	return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID, nil
 }
 
+func GetTwitterRSS(input string) (nitterFeedURL string, err error) {
+	// Get the user
+	username := input
+
+	// Input is the URL
+	u, err := url.Parse(input)
+	if err == nil {
+		username = u.Path
+		username = strings.ReplaceAll(username, "/", "")
+	}
+
+	rssURL := "https://" + config.GetNitterInstance() + "/" + username + "/rss"
+
+	// Check if nitter returns an error (Not found/private acc)
+	_, _, nitterErr := GetRSSFeedInfo(rssURL)
+	if nitterErr != nil {
+		return "", nitterErr
+
+	} else {
+		return rssURL, nil
+	}
+
+}
+
 func SanitizeFeedURL(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {

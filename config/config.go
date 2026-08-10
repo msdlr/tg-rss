@@ -14,6 +14,7 @@ var telegramToken string = "your-token-here"
 var maxOldArticles uint = 3
 var telegramBotHandle string = "myTelegramBot"
 var backupPeriod time.Duration = 24 * time.Hour
+var nitterInstance string = "nitter.net"
 
 func GetMaxOldArticles() uint {
 	return maxOldArticles
@@ -33,6 +34,10 @@ func GetTelegramBotHandle() string {
 
 func GetBackupPeriod() time.Duration {
 	return backupPeriod
+}
+
+func GetNitterInstance() string {
+	return nitterInstance
 }
 
 func LoadConfig() {
@@ -71,4 +76,11 @@ func LoadConfig() {
 	}
 	old, _ := strconv.Atoi(maxOlddStr)
 	maxOldArticles = uint(old)
+
+	// Nitter instance for Twitter RSS
+	nitter := os.Getenv("NITTER_INSTANCE")
+	if nitter != "" {
+		nitterInstance = nitter
+	}
+
 }
