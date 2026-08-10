@@ -90,6 +90,10 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 					FeedTitle:   feed.Title,
 				}
 
+				if newArticle.Title == "" && newArticle.Description != "" {
+					newArticle.Title = newArticle.Description
+				}
+
 				// The oldest timestamp possible
 				lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
 
