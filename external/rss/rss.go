@@ -270,6 +270,29 @@ func GetYouTubeRSS(url string) (string, error) {
 	return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID, nil
 }
 
+func GetBskyRSS(input string) (feedURL string, err error) {
+	// Get the user
+	username := input
+
+	// Input is the URL
+	u, err := url.Parse(input)
+	if err == nil {
+		username = u.Path
+		username = strings.ReplaceAll(username, "/", "")
+	}
+
+	rssURL := "https://bsky.app/profile/" + username + ".bsky.social/rss"
+
+	// Check if nitter returns an error (Not found/private acc)
+	_, _, err2 := GetRSSFeedInfo(rssURL)
+	if err2 != nil {
+		return "", err2
+
+	} else {
+		return rssURL, nil
+	}
+}
+
 func GetTwitterRSS(input string) (nitterFeedURL string, err error) {
 	// Get the user
 	username := input
