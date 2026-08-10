@@ -90,6 +90,20 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 					FeedTitle:   feed.Title,
 				}
 
+				// Detect links and remove them from the title
+				newArticle.Title = func(s string) string {
+					result := s
+
+					for _, word := range strings.Fields(s) {
+						if strings.HasPrefix(word, "https://") {
+							result = strings.Replace(result, word, "", 1)
+						}
+					}
+
+					return result
+				}(newArticle.Title)
+
+				// But if the title was empty, use the URL
 				if newArticle.Title == "" {
 					newArticle.Title = newArticle.URL
 				}
