@@ -97,7 +97,7 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 					for _, word := range strings.Fields(s) {
 						if strings.HasPrefix(word, "https://") {
-							result = strings.Replace(result, word, "", 1)
+							result = strings.Replace(result, word, "[link]", 1)
 						}
 					}
 
@@ -106,7 +106,7 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 				// But if the title was empty, use the URL
 				if newArticle.Title == "" {
-					newArticle.Title = newArticle.URL
+					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
 				}
 
 				// The oldest timestamp possible
