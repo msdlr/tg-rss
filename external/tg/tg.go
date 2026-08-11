@@ -214,7 +214,7 @@ func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 
 • <b>/sub</b> <code>RSS_URL</code> - Subscribe to an RSS feed
 • <b>/subyt</b> <code>CHANNEL_URL</code> - Subscribe to a YouTube channel
-• <b>/subbsky</b> <code>USERNAME</code> - Subscribe to a Blusky.social profile (posts must be visible to non-logged in)
+• <b>/subbsky</b> <code>USERNAME</code> - Subscribe to a Bluesky.social profile (posts must be visible to non-logged in)
 • <b>/subtw</b> <code>USERNAME</code> - Subscribe to a Twitter public profile
 • <b>/unsub</b> <code>RSS_URL</code> - Remove a subscription
 • <b>/unsub</b> - Remove subscriptions (interactive)
