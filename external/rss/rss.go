@@ -144,7 +144,7 @@ func FormatNewsHTML(news []Article) []string {
 	for _, art := range news {
 		if art.FeedTitle != prevFeed {
 			block := fmt.Sprintf(
-				"<b>%s</b>\n",
+				"<b>🆕 %s</b>\n",
 				html.EscapeString(art.FeedTitle),
 			)
 			prevFeed = art.FeedTitle
