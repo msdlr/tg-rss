@@ -32,7 +32,6 @@ type UpdateMsg struct {
 }
 
 var feedParser *gofeed.Parser
-var timeDelta time.Duration
 var lastQuery time.Time
 
 func SetlastQuery() {
