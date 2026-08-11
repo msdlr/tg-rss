@@ -103,6 +103,10 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 					return result
 				}(newArticle.Title)
 
+				if config.HideNitter() {
+					newArticle.URL = strings.ReplaceAll(newArticle.URL, config.GetNitterInstance(), "x.com")
+				}
+
 				// But if the title was empty, use the URL
 				if newArticle.Title == "" {
 					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")

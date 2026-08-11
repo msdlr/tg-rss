@@ -340,6 +340,10 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Fprintf(&sb, "<b>Your subscriptions (%d):</b>\n", len(feeds))
 
 	for _, f := range feeds {
+		if config.HideNitter() {
+			f.WebURL = strings.ReplaceAll(f.WebURL, config.GetNitterInstance(), "x.com")
+		}
+
 		fmt.Fprintf(
 			&sb,
 			"• <a href=\"%s\">%s</a> (<a href=\"%s\">feed</a>)\n",
