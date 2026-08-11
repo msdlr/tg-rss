@@ -12,6 +12,7 @@ import (
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mmcdole/gofeed"
 	gh "golang.org/x/net/html"
@@ -26,8 +27,8 @@ type Article struct {
 }
 
 type UpdateMsg struct {
-	User             int64
-	FormattedMessage string
+	User              int64
+	FormattedMessages []string
 }
 
 var feedParser *gofeed.Parser
@@ -136,34 +137,52 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 }
 
-func FormatNewsHTML(news []Article) string {
-	var b strings.Builder
-
+func FormatNewsHTML(news []Article) []string {
+	var messages []string
+	var current strings.Builder
 	prevFeed := ""
 
 	for _, art := range news {
-		if prevFeed != art.FeedTitle {
-			if prevFeed != "" {
-				b.WriteByte('\n')
+		if art.FeedTitle != prevFeed {
+			block := fmt.Sprintf(
+				"<b>%s</b>\n",
+				html.EscapeString(art.FeedTitle),
+			)
+			prevFeed = art.FeedTitle
+
+			if utf8.RuneCountInString(current.String())+
+				utf8.RuneCountInString(block) > 4096 {
+				messages = append(messages, current.String())
+				current.Reset()
 			}
 
-			fmt.Fprintf(&b, "<b>%s</b>\n", html.EscapeString(art.FeedTitle))
-			prevFeed = art.FeedTitle
+			current.WriteString(block)
 		}
 
 		if art.Title == "" {
 			art.Title = art.URL
 		}
 
-		fmt.Fprintf(
-			&b,
+		line := fmt.Sprintf(
 			"• <a href=\"%s\">%s</a>\n",
 			html.EscapeString(art.URL),
 			html.EscapeString(art.Title),
 		)
+
+		if utf8.RuneCountInString(current.String())+
+			utf8.RuneCountInString(line) > 4096 {
+			messages = append(messages, current.String())
+			current.Reset()
+		}
+
+		current.WriteString(line)
 	}
 
-	return b.String()
+	if current.Len() > 0 {
+		messages = append(messages, current.String())
+	}
+
+	return messages
 }
 
 func ReadAllFeeds() (messages []UpdateMsg) {

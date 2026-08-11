@@ -148,13 +148,13 @@ func handleSubYTCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 }
 
 func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	msg := rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0))
+	for _, msg := range rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0)) {
+		if msg == "" {
+			msg = "No news for " + config.GetUpdatePeriod().String()
+		}
 
-	if msg == "" {
-		msg = "No news for " + config.GetUpdatePeriod().String()
+		SendMessageHTML(update.Message.Chat.ID, msg)
 	}
-
-	SendMessageHTML(update.Message.Chat.ID, msg)
 }
 
 func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -175,8 +175,10 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 	user := update.Message.Chat.ID
 	arts := rss.GetArticlesForUser(user, config.GetMaxOldArticles())
 
-	if len(arts) > 0 {
-		SendMessageHTML(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
+	for _, msg := range rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0)) {
+		if len(arts) > 0 {
+			SendMessageHTML(update.Message.Chat.ID, msg)
+		}
 	}
 }
 

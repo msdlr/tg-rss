@@ -49,7 +49,9 @@ func StartTasks() {
 		for {
 			messages := rss.ReadAllFeeds()
 			for _, message := range messages {
-				tg.SendMessageHTML(message.User, message.FormattedMessage)
+				for _, msg := range message.FormattedMessages {
+					tg.SendMessageHTML(message.User, msg)
+				}
 			}
 
 			<-ticker.C
