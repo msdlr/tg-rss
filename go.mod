@@ -1,4 +1,4 @@
-module tg-rss
+module github.com/msdlr/tg-rss
 
 go 1.26
 

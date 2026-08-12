@@ -9,11 +9,12 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"tg-rss/config"
-	"tg-rss/external/db"
-	"tg-rss/external/rss"
-	"tg-rss/info"
 	"time"
+
+	"github.com/msdlr/tg-rss/config"
+	"github.com/msdlr/tg-rss/external/db"
+	"github.com/msdlr/tg-rss/external/rss"
+	"github.com/msdlr/tg-rss/info"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"

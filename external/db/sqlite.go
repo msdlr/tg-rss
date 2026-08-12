@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"tg-rss/config"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/msdlr/tg-rss/config"
 )
 
 var db *sql.DB

@@ -9,12 +9,13 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"tg-rss/config"
-	"tg-rss/external/db"
 	"time"
 	"unicode/utf8"
 
 	"github.com/mmcdole/gofeed"
+	"github.com/msdlr/tg-rss/config"
+	"github.com/msdlr/tg-rss/external/db"
+
 	gh "golang.org/x/net/html"
 )
 

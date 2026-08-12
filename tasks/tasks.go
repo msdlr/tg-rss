@@ -2,12 +2,13 @@ package tasks
 
 import (
 	"log"
-	"tg-rss/config"
-	"tg-rss/external/db"
-	"tg-rss/external/rss"
-	"tg-rss/external/tg"
-	"tg-rss/info"
 	"time"
+
+	"github.com/msdlr/tg-rss/config"
+	"github.com/msdlr/tg-rss/external/db"
+	"github.com/msdlr/tg-rss/external/rss"
+	"github.com/msdlr/tg-rss/external/tg"
+	"github.com/msdlr/tg-rss/info"
 )
 
 func InitDatabase() {

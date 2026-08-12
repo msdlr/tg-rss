@@ -1,7 +1,7 @@
 package main
 
 import (
-	"tg-rss/tasks"
+	"github.com/msdlr/tg-rss/tasks"
 )
 
 func main() {
