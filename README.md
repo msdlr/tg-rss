@@ -11,7 +11,6 @@ A Telegram bot written in Golang that periodically fetches RSS feeds that users 
 - **`/sub <rss_url>`** – Subscribe to an RSS feed.
 - **`/subbsky <handle>`** – Subscribe to a Bluesky.social profile (must allow posts for non-logged users).
 - **`/subyt <channel_url>`** – Subscribe to the RSS feed of a YouTube channel.
-- **`/subtw <handle>`** – Subscribe to a Twitter public profile.
 - **`/unsub <rss_url>`** – Remove an RSS subscription.
 - **`/list`** – List your current RSS subscriptions.
 - **`/latest`** – Show the latest **N** articles from each subscribed feed.

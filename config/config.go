@@ -36,10 +36,6 @@ func GetBackupPeriod() time.Duration {
 	return backupPeriod
 }
 
-func GetNitterInstance() string {
-	return nitterInstance
-}
-
 func LoadConfig() {
 	err := godotenv.Load()
 	if err != nil {
@@ -76,11 +72,5 @@ func LoadConfig() {
 	}
 	old, _ := strconv.Atoi(maxOlddStr)
 	maxOldArticles = uint(old)
-
-	// Nitter instance for Twitter RSS
-	nitter := os.Getenv("NITTER_INSTANCE")
-	if nitter != "" {
-		nitterInstance = nitter
-	}
 
 }
