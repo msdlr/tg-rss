@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -16,7 +15,6 @@ var maxOldArticles uint = 3
 var telegramBotHandle string = "myTelegramBot"
 var backupPeriod time.Duration = 24 * time.Hour
 var nitterInstance string = "nitter.net"
-var hideNitter bool = true
 
 func GetMaxOldArticles() uint {
 	return maxOldArticles
@@ -40,10 +38,6 @@ func GetBackupPeriod() time.Duration {
 
 func GetNitterInstance() string {
 	return nitterInstance
-}
-
-func HideNitter() bool {
-	return hideNitter
 }
 
 func LoadConfig() {
@@ -87,13 +81,6 @@ func LoadConfig() {
 	nitter := os.Getenv("NITTER_INSTANCE")
 	if nitter != "" {
 		nitterInstance = nitter
-	}
-
-	hNitter := os.Getenv("HIDE_NITTER")
-	if hNitter == "1" || strings.ToUpper(hNitter) == "TRUE" {
-		hideNitter = true
-	} else {
-		hideNitter = false
 	}
 
 }
