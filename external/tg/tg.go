@@ -55,10 +55,6 @@ func Start() {
 				Description: "Subscribe to an YouTube channel",
 			},
 			{
-				Command:     "subtw",
-				Description: "Subscribe to a public Twitter account",
-			},
-			{
 				Command:     "subbsky",
 				Description: "Subscribe to a public Bluesky account",
 			},
@@ -98,7 +94,6 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt", bot.MatchTypePrefix, handleSubYTCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/subtw", bot.MatchTypePrefix, handleSubTwitterCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/subbsky", bot.MatchTypePrefix, handleSubBskyCommand)
 
 	botHandle := config.GetTelegramBotHandle()
@@ -114,7 +109,6 @@ func Start() {
 		b.RegisterHandler(bot.HandlerTypeMessageText, "/timing@"+botHandle, bot.MatchTypeExact, handleTimingCommand)
 		b.RegisterHandler(bot.HandlerTypeMessageText, "/pull@"+botHandle, bot.MatchTypeExact, handlePullCommand)
 		b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt@"+botHandle, bot.MatchTypePrefix, handleSubYTCommand)
-		b.RegisterHandler(bot.HandlerTypeMessageText, "/subtw@"+botHandle, bot.MatchTypePrefix, handleSubTwitterCommand)
 		b.RegisterHandler(bot.HandlerTypeMessageText, "/subbsky@"+botHandle, bot.MatchTypePrefix, handleSubBskyCommand)
 	}
 
@@ -129,22 +123,6 @@ func handleSubBskyCommand(ctx context.Context, b *bot.Bot, update *models.Update
 
 	input := strings.Fields(update.Message.Text)[1]
 	feedURL, err := rss.GetBskyRSS(input)
-	if err != nil {
-		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving RSS feed")
-	} else {
-		update.Message.Text = strings.Replace(update.Message.Text, input, feedURL, 1)
-		handleSubCommand(ctx, b, update)
-	}
-}
-
-func handleSubTwitterCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	if len(strings.Fields(update.Message.Text)) == 1 {
-		SendMessageHTML(update.Message.Chat.ID, "Usage: /subtw  <code>username</code>")
-		return
-	}
-
-	input := strings.Fields(update.Message.Text)[1]
-	feedURL, err := rss.GetTwitterRSS(input)
 	if err != nil {
 		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving RSS feed")
 	} else {
@@ -215,7 +193,6 @@ func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 • <b>/sub</b> <code>RSS_URL</code> - Subscribe to an RSS feed
 • <b>/subyt</b> <code>CHANNEL_URL</code> - Subscribe to a YouTube channel
 • <b>/subbsky</b> <code>USERNAME</code> - Subscribe to a Bluesky.social profile (posts must be visible to non-logged in)
-• <b>/subtw</b> <code>USERNAME</code> - Subscribe to a Twitter public profile
 • <b>/unsub</b> <code>RSS_URL</code> - Remove a subscription
 • <b>/unsub</b> - Remove subscriptions (interactive)
 • <b>/list</b> - List your subscriptions
