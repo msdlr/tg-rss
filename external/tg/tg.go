@@ -177,7 +177,7 @@ func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update)
 	user := update.Message.Chat.ID
 	arts := rss.GetArticlesForUser(user, config.GetMaxOldArticles())
 
-	for _, msg := range rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0)) {
+	for _, msg := range rss.FormatNewsHTML(arts) {
 		if len(arts) > 0 {
 			SendMessageHTML(update.Message.Chat.ID, msg)
 		}
