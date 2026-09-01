@@ -1,19 +1,22 @@
 package rss
 
 import (
-	"encoding/xml"
 	"fmt"
 	"html"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/stats"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mmcdole/gofeed"
+	gh "golang.org/x/net/html"
 )
 
 type Article struct {
@@ -25,12 +28,11 @@ type Article struct {
 }
 
 type UpdateMsg struct {
-	User             int64
-	FormattedMessage string
+	User              int64
+	FormattedMessages []string
 }
 
 var feedParser *gofeed.Parser
-var timeDelta time.Duration
 var lastQuery time.Time
 
 func SetlastQuery() {
@@ -45,31 +47,13 @@ func InitFeedParser() {
 	feedParser = gofeed.NewParser()
 }
 
-func GetRSSFeedTitle(url string) (string, error) {
-	resp, err := http.Get(url)
+func GetRSSFeedInfo(feedURL string) (title string, website string, err error) {
+	feed, err := feedParser.ParseURL(feedURL)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	defer resp.Body.Close()
 
-	var title string
-	decoder := xml.NewDecoder(resp.Body)
-	for {
-		token, err := decoder.Token()
-		if err != nil {
-			return "", err
-		}
-
-		switch elem := token.(type) {
-		case xml.StartElement:
-			if elem.Name.Local == "title" {
-				if err := decoder.DecodeElement(&title, &elem); err != nil {
-					return "", err
-				}
-				return title, nil
-			}
-		}
-	}
+	return feed.Title, feed.Link, nil
 }
 
 func GetArticlesForUser(userID int64, old uint) (news []Article) {
@@ -91,9 +75,11 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 			defer wg.Done()
 
 			var oldPosts uint = 0
-			feed, err := feedParser.ParseURL(feedEntry.URL)
+			feed, err := feedParser.ParseURL(feedEntry.FeedURL)
 			if err != nil {
-				log.Println("Error fetching " + feedEntry.URL + err.Error())
+				// Timeout
+				log.Println("Skipping source " + feedEntry.FeedURL + ": " + err.Error())
+				return
 			}
 
 			for _, article := range feed.Items {
@@ -103,6 +89,24 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 					Title:       article.Title,
 					Description: article.Description,
 					FeedTitle:   feed.Title,
+				}
+
+				// Detect links and remove them from the title
+				newArticle.Title = func(s string) string {
+					result := s
+
+					for _, word := range strings.Fields(s) {
+						if strings.HasPrefix(word, "https://") {
+							result = strings.Replace(result, word, "[link]", 1)
+						}
+					}
+
+					return result
+				}(newArticle.Title)
+
+				// But if the title was empty, use the URL
+				if newArticle.Title == "" {
+					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
 				}
 
 				// The oldest timestamp possible
@@ -133,34 +137,52 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 }
 
-func FormatNewsHTML(news []Article) string {
-	var b strings.Builder
-
+func FormatNewsHTML(news []Article) []string {
+	var messages []string
+	var current strings.Builder
 	prevFeed := ""
 
 	for _, art := range news {
-		if prevFeed != art.FeedTitle {
-			if prevFeed != "" {
-				b.WriteByte('\n')
+		if art.FeedTitle != prevFeed {
+			block := fmt.Sprintf(
+				"<b>🆕 %s</b>\n",
+				html.EscapeString(art.FeedTitle),
+			)
+			prevFeed = art.FeedTitle
+
+			if utf8.RuneCountInString(current.String())+
+				utf8.RuneCountInString(block) > 4096 {
+				messages = append(messages, current.String())
+				current.Reset()
 			}
 
-			fmt.Fprintf(&b, "<b>%s</b>\n", html.EscapeString(art.FeedTitle))
-			prevFeed = art.FeedTitle
+			current.WriteString(block)
 		}
 
 		if art.Title == "" {
 			art.Title = art.URL
 		}
 
-		fmt.Fprintf(
-			&b,
+		line := fmt.Sprintf(
 			"• <a href=\"%s\">%s</a>\n",
 			html.EscapeString(art.URL),
 			html.EscapeString(art.Title),
 		)
+
+		if utf8.RuneCountInString(current.String())+
+			utf8.RuneCountInString(line) > 4096 {
+			messages = append(messages, current.String())
+			current.Reset()
+		}
+
+		current.WriteString(line)
 	}
 
-	return b.String()
+	if current.Len() > 0 {
+		messages = append(messages, current.String())
+	}
+
+	return messages
 }
 
 func ReadAllFeeds() (messages []UpdateMsg) {
@@ -202,4 +224,106 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 	}
 
 	return
+}
+
+func GetYouTubeRSS(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	doc, err := gh.Parse(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var channelID string
+
+	var walk func(*gh.Node)
+	walk = func(n *gh.Node) {
+		if n.Type == gh.ElementNode && n.Data == "link" {
+			var rel, href string
+			for _, a := range n.Attr {
+				switch a.Key {
+				case "rel":
+					rel = a.Val
+				case "href":
+					href = a.Val
+				}
+			}
+
+			if rel == "canonical" && strings.Contains(href, "/channel/") {
+				channelID = href[strings.LastIndex(href, "/")+1:]
+				return
+			}
+		}
+
+		for c := n.FirstChild; c != nil && channelID == ""; c = c.NextSibling {
+			walk(c)
+		}
+	}
+
+	walk(doc)
+
+	if channelID == "" {
+		return "", fmt.Errorf("channel ID not found")
+	}
+
+	return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID, nil
+}
+
+func GetBskyRSS(input string) (feedURL string, err error) {
+	// Get the user
+	username := input
+
+	// Input is the URL
+	u, err := url.Parse(input)
+	if err == nil {
+		username = u.Path
+		username = strings.ReplaceAll(username, "/", "")
+	}
+
+	rssURL := "https://bsky.app/profile/" + username + ".bsky.social/rss"
+
+	// Check if nitter returns an error (Not found/private acc)
+	_, _, err2 := GetRSSFeedInfo(rssURL)
+	if err2 != nil {
+		return "", err2
+
+	} else {
+		return rssURL, nil
+	}
+}
+
+func SanitizeFeedURL(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	u.Scheme = strings.ToLower(u.Scheme)
+	u.Host = strings.ToLower(u.Host)
+	u.Fragment = ""
+
+	// Remove default ports.
+	switch {
+	case u.Scheme == "http" && strings.HasSuffix(u.Host, ":80"):
+		u.Host = strings.TrimSuffix(u.Host, ":80")
+	case u.Scheme == "https" && strings.HasSuffix(u.Host, ":443"):
+		u.Host = strings.TrimSuffix(u.Host, ":443")
+	}
+
+	// Clean path and remove trailing slashes.
+	p := path.Clean(u.Path)
+	if p != "/" {
+		p = strings.TrimRight(p, "/")
+	}
+	u.Path = p
+
+	// Sort query parameters.
+	q := u.Query()
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
 }

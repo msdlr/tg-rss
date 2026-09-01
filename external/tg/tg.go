@@ -12,6 +12,7 @@ import (
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
+	"tg-rss/info"
 	"tg-rss/stats"
 	"time"
 
@@ -26,7 +27,7 @@ func Start() {
 	defer cancel()
 
 	opts := []bot.Option{
-		bot.WithDefaultHandler(handleStartCommand),
+		bot.WithDefaultHandler(func(ctx context.Context, b *bot.Bot, update *models.Update) {}),
 	}
 
 	var err error
@@ -43,8 +44,20 @@ func Start() {
 				Description: "Show help and usage",
 			},
 			{
+				Command:     "help",
+				Description: "Show help and usage",
+			},
+			{
 				Command:     "sub",
 				Description: "Subscribe to an RSS feed",
+			},
+			{
+				Command:     "subyt",
+				Description: "Subscribe to an YouTube channel",
+			},
+			{
+				Command:     "subbsky",
+				Description: "Subscribe to a public Bluesky account",
 			},
 			{
 				Command:     "unsub",
@@ -78,7 +91,7 @@ func Start() {
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, handleStartCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, handleStartCommand)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub", bot.MatchTypePrefix, handleSubCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/sub ", bot.MatchTypePrefix, handleSubCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub", bot.MatchTypePrefix, handleUnsubCommand)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "unsub:", bot.MatchTypePrefix, handleUnsubCallback)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/list", bot.MatchTypeExact, handleListCommand)
@@ -86,6 +99,24 @@ func Start() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/timing", bot.MatchTypeExact, handleTimingCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/pull", bot.MatchTypeExact, handlePullCommand)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/stats", bot.MatchTypeExact, handleStatsCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt", bot.MatchTypePrefix, handleSubYTCommand)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/subbsky", bot.MatchTypePrefix, handleSubBskyCommand)
+
+	botHandle := config.GetTelegramBotHandle()
+
+	if botHandle != "" {
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/start@"+botHandle, bot.MatchTypeExact, handleStartCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/help@"+botHandle, bot.MatchTypeExact, handleStartCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/sub@"+botHandle, bot.MatchTypePrefix, handleSubCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/unsub@"+botHandle, bot.MatchTypePrefix, handleUnsubCommand)
+		b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "unsub:", bot.MatchTypePrefix, handleUnsubCallback)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/list@"+botHandle, bot.MatchTypeExact, handleListCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/latest@"+botHandle, bot.MatchTypeExact, handleLatestCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/timing@"+botHandle, bot.MatchTypeExact, handleTimingCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/pull@"+botHandle, bot.MatchTypeExact, handlePullCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/subyt@"+botHandle, bot.MatchTypePrefix, handleSubYTCommand)
+		b.RegisterHandler(bot.HandlerTypeMessageText, "/subbsky@"+botHandle, bot.MatchTypePrefix, handleSubBskyCommand)
+	}
 
 	b.Start(ctx)
 }
@@ -94,41 +125,91 @@ func handleStatsCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 	SendMessageHTML(update.Message.Chat.ID, stats.FormatStats())
 }
 
-func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	msg := rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0))
-
-	if msg == "" {
-		msg = "No news for " + config.GetUpdatePeriod().String()
+func handleSubBskyCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if len(strings.Fields(update.Message.Text)) == 1 {
+		SendMessageHTML(update.Message.Chat.ID, "Usage: /subbsky  <code>username</code>")
+		return
 	}
 
-	SendMessageHTML(update.Message.Chat.ID, msg)
+	input := strings.Fields(update.Message.Text)[1]
+	feedURL, err := rss.GetBskyRSS(input)
+	if err != nil {
+		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving RSS feed")
+	} else {
+		update.Message.Text = strings.Replace(update.Message.Text, input, feedURL, 1)
+		handleSubCommand(ctx, b, update)
+	}
+}
+
+func handleSubYTCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if len(strings.Fields(update.Message.Text)) == 1 {
+		SendMessageHTML(update.Message.Chat.ID, "Usage: /subyt  <code>channel_url</code>")
+		return
+	}
+
+	channelURL := strings.Fields(update.Message.Text)[1]
+	feedURL, err := rss.GetYouTubeRSS(channelURL)
+	if err != nil {
+		SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving RSS feed from channel")
+	} else {
+		update.Message.Text = strings.Replace(update.Message.Text, channelURL, feedURL, 1)
+		handleSubCommand(ctx, b, update)
+	}
+}
+
+func handlePullCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
+	for _, msg := range rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0)) {
+		if msg == "" {
+			msg = "No news for " + config.GetUpdatePeriod().String()
+		}
+
+		SendMessageHTML(update.Message.Chat.ID, msg)
+	}
 }
 
 func handleTimingCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	// lastRead := bot.EscapeMarkdown(rss.GetlastQuery().Format("2006/01/02 15:04:05"))
-	diff := bot.EscapeMarkdown((time.Since(rss.GetlastQuery())).String())
-	next := bot.EscapeMarkdown(time.Duration((time.Until(rss.GetlastQuery().Add(config.GetUpdatePeriod())))).String())
-	msg := "Feeds last read " + diff + " ago, next in " + next
-	SendMessageMarkdown(update.Message.Chat.ID, msg)
+	lastRead := rss.GetlastQuery()
+	nextRead := time.Now().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())
+
+	if lastRead.IsZero() {
+		msg := "Feeds not read yet, will read at " + nextRead.Format("15:04")
+		SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(msg))
+		return
+	}
+
+	msg := "Feeds last read at " + lastRead.Format("15:04") + ", next at " + nextRead.Format("15:04")
+	SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(msg))
 }
 
 func handleLatestCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	user := update.Message.Chat.ID
 	arts := rss.GetArticlesForUser(user, config.GetMaxOldArticles())
 
-	if len(arts) > 0 {
-		SendMessageHTML(update.Message.Chat.ID, rss.FormatNewsHTML(arts))
+	for _, msg := range rss.FormatNewsHTML(rss.GetArticlesForUser(update.Message.Chat.ID, 0)) {
+		if len(arts) > 0 {
+			SendMessageHTML(update.Message.Chat.ID, msg)
+		}
 	}
 }
 
 func handleStartCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
-	helpMessage := `Available commands:
+	helpMessage := fmt.Sprintf(`tg-rss version %s (%s)
+	
+	<b>Available commands:</b>
 
-• <b>/start</b> — Show this help message
-• <b>/sub</b> <code>RSS_URL</code> — Subscribe to an RSS feed
-• <b>/unsub</b> <code>RSS_URL</code> — Remove an RSS subscription
-• <b>/list</b> — List your RSS subscriptions
-• <b>/latest</b> — Get the latest articles from your subscriptions`
+• <b>/start</b> - Show this help message
+• <b>/help</b> - Show this help message
+
+• <b>/sub</b> <code>RSS_URL</code> - Subscribe to an RSS feed
+• <b>/subyt</b> <code>CHANNEL_URL</code> - Subscribe to a YouTube channel
+• <b>/subbsky</b> <code>USERNAME</code> - Subscribe to a Bluesky.social profile (posts must be visible to non-logged in)
+• <b>/unsub</b> <code>RSS_URL</code> - Remove a subscription
+• <b>/unsub</b> - Remove subscriptions (interactive)
+• <b>/list</b> - List your subscriptions
+
+• <b>/latest</b> - Show the latest %d articles from each subscription
+• <b>/pull</b> - Check for updates now (last %s)
+• <b>/timing</b> - Show the last and next scheduled update`, info.GetHead(), info.GetDate(), config.GetMaxOldArticles(), time.Duration(config.GetUpdatePeriod()).String())
 
 	SendMessageHTML(update.Message.Chat.ID, helpMessage)
 }
@@ -144,12 +225,15 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	for _, url := range strings.Fields(textContent)[1:] {
 
-		feedTitle, err := rss.GetRSSFeedTitle(url)
+		// feedTitle, err := rss.GetRSSFeedTitle(url)
+		feedTitle, webURL, err := rss.GetRSSFeedInfo(url)
 
 		if err != nil {
-			SendMessageMarkdown(update.Message.Chat.ID, "Error retrieving feed title for ``"+url+"``")
+			SendMessageMarkdown(update.Message.Chat.ID, bot.EscapeMarkdown(url)+" is not a valid feed")
 			return
 		}
+
+		url, _ = rss.SanitizeFeedURL(url)
 
 		// Add the chatID to the database
 		if update.Message.Chat.Type == "private" {
@@ -167,7 +251,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		}
 
 		// Add the feed to the database
-		feedID, feedErr := db.AddFeed(url, feedTitle)
+		feedID, feedErr := db.AddFeed(url, feedTitle, webURL)
 		if feedErr != nil {
 			log.Println("Error adding feed")
 			return
@@ -220,7 +304,7 @@ func handleUnsubCommand(ctx context.Context, b *bot.Bot, update *models.Update) 
 		fmt.Fprintf(
 			&sb,
 			"Unsuscribed from <a href=\"%s\">%s</a>\n",
-			html.EscapeString(feed.URL),
+			html.EscapeString(feed.FeedURL),
 			html.EscapeString(feed.Title),
 		)
 
@@ -241,14 +325,15 @@ func handleListCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>Your feeds (%d):</b>\n", len(feeds))
+	fmt.Fprintf(&sb, "<b>Your subscriptions (%d):</b>\n", len(feeds))
 
 	for _, f := range feeds {
 		fmt.Fprintf(
 			&sb,
-			"• <a href=\"%s\">%s</a>\n",
-			html.EscapeString(f.URL),
+			"• <a href=\"%s\">%s</a> (<a href=\"%s\">feed</a>)\n",
+			html.EscapeString(f.WebURL),
 			html.EscapeString(f.Title),
+			html.EscapeString(f.FeedURL),
 		)
 	}
 
@@ -297,8 +382,6 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		return
 	}
 
-	chatID := message.Chat.ID
-
 	feedID, err := strconv.ParseInt(
 		strings.TrimPrefix(update.CallbackQuery.Data, "unsub:"),
 		10,
@@ -309,7 +392,7 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 		return
 	}
 
-	feeds, err := db.GetUserFeeds(chatID)
+	feeds, err := db.GetUserFeeds(message.Chat.ID)
 	if err != nil {
 		log.Println("Error getting user feeds:", err)
 		return
@@ -320,17 +403,59 @@ func handleUnsubCallback(ctx context.Context, b *bot.Bot, update *models.Update)
 			continue
 		}
 
-		// Reuse the normal /unsub logic with the selected feed URL.
-		handleUnsubCommand(ctx, b, &models.Update{
-			Message: &models.Message{
-				Chat: models.Chat{ID: chatID},
-				Text: "/unsub " + feed.URL,
-			},
+		// Unsubscribe
+		if err := db.Unsubscribe(message.Chat.ID, feed.ID); err != nil {
+			log.Println("Error removing subscription:", err)
+			return
+		}
+
+		// Rebuild keyboard removing the selected feed
+		var keyboard [][]models.InlineKeyboardButton
+		for _, f := range feeds {
+			if f.ID == feedID {
+				continue
+			}
+
+			keyboard = append(keyboard, []models.InlineKeyboardButton{
+				{
+					Text:         f.Title,
+					CallbackData: "unsub:" + strconv.FormatInt(f.ID, 10),
+				},
+			})
+		}
+
+		if len(keyboard) == 0 {
+			// No feeds left: remove the keyboard by editing the message
+			_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
+				ChatID:    message.Chat.ID,
+				MessageID: message.ID,
+				Text:      "You have no subscriptions left",
+			})
+		} else {
+			_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+				ChatID:    message.Chat.ID,
+				MessageID: message.ID,
+				ReplyMarkup: &models.InlineKeyboardMarkup{
+					InlineKeyboard: keyboard,
+				},
+			})
+		}
+
+		if err != nil {
+			log.Println("Failed to update message:", err)
+		}
+
+		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
 		})
+
+		msg := fmt.Sprintf(`Unsubscribed from <a href="%s">%s</a>`, feed.FeedURL, feed.Title)
+
+		SendMessageHTML(message.Chat.ID, msg)
 		return
 	}
 
-	SendMessageMarkdown(chatID, "Feed not found")
+	SendMessageMarkdown(message.Chat.ID, "Feed not found")
 }
 
 func SendMessageMarkdown(chatID int64, msg string) {

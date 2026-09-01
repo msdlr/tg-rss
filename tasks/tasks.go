@@ -1,10 +1,12 @@
 package tasks
 
 import (
+	"log"
 	"tg-rss/config"
 	"tg-rss/external/db"
 	"tg-rss/external/rss"
 	"tg-rss/external/tg"
+	"tg-rss/info"
 	"tg-rss/stats"
 	"time"
 )
@@ -16,8 +18,23 @@ func InitDatabase() {
 func StartTasks() {
 	stats.SetStartUpTime(time.Now())
 	// Read database
+	log.Printf("tg-rss version %s (%s)\n", info.GetHead(), info.GetDate())
+	// Read config
 	config.LoadConfig()
+
+	// Initialize database
 	InitDatabase()
+
+	go func() {
+		ticker := time.NewTicker(config.GetBackupPeriod())
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			bkPath := "db/" + time.Now().Format("0601021504") + ".sqlite"
+			db.Backup("db/db.sqlite", bkPath)
+		}
+	}()
 
 	// Start Telegram bot
 	go tg.Start()
@@ -27,14 +44,17 @@ func StartTasks() {
 	rss.InitFeedParser()
 	timesLooped := 0
 	go func() {
+		// Wait until the time is a multiple of the update period
+		time.Sleep(time.Until(time.Now().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())))
+
 		ticker := time.NewTicker(config.GetUpdatePeriod())
 		defer ticker.Stop()
 
 		for {
-			if timesLooped != 0 {
-				messages := rss.ReadAllFeeds()
-				for _, message := range messages {
-					tg.SendMessageHTML(message.User, message.FormattedMessage)
+			messages := rss.ReadAllFeeds()
+			for _, message := range messages {
+				for _, msg := range message.FormattedMessages {
+					tg.SendMessageHTML(message.User, msg)
 				}
 			}
 			timesLooped++
