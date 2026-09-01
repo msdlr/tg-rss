@@ -226,6 +226,34 @@ func GetAllUsers() ([]User, error) {
 	return users, rows.Err()
 }
 
+func GetAllFeeds() (feeds []Feed, e error) {
+	/*
+			CREATE TABLE IF NOT EXISTS feeds (
+		        id INTEGER PRIMARY KEY AUTOINCREMENT,
+		        feedurl TEXT UNIQUE NOT NULL,
+		        weburl TEXT UNIQUE NOT NULL,
+		        title TEXT
+		    );
+	*/
+
+	query := `SELECT id, feedurl, weburl, title FROM feeds`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var feed Feed
+		if err := rows.Scan(&feed.ID, &feed.FeedURL, &feed.WebURL, &feed.Title); err != nil {
+			return nil, err
+		}
+		feeds = append(feeds, feed)
+	}
+	return feeds, rows.Err()
+}
+
 func Backup(dbPath, backupPath string) error {
 	info, err := os.Stat(dbPath)
 	if err != nil {
