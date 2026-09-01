@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -224,6 +225,13 @@ func GetAllUsers() ([]User, error) {
 		users = append(users, user)
 	}
 	return users, rows.Err()
+}
+
+func GetCount(tableName string) (int, error) {
+	var count int
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
+	err := db.QueryRow(query).Scan(&count)
+	return count, err
 }
 
 func Backup(dbPath, backupPath string) error {

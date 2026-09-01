@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"tg-rss/external/db"
 	"time"
 )
 
@@ -43,12 +44,18 @@ func RecordFeedsPullDuration(d time.Duration) {
 }
 
 func FormatStats() (stats string) {
+	nUsers, _ := db.GetCount("users")
+	nFeeds, _ := db.GetCount("feeds")
 	stats = fmt.Sprintf(
 		`Statistics:
 • Uptime: %s
-• Average feed pull time: %.3f µs`,
+• Average feed pull time: %.3f µs
+• Users: %d
+• Feeds: %d`,
 		time.Since(startUpTime).Round(time.Second),
 		float64(avgFeedsPullDuration.Nanoseconds())/1000.0,
+		nUsers,
+		nFeeds,
 	)
 
 	return
