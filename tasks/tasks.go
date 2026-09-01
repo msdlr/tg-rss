@@ -39,6 +39,7 @@ func StartTasks() {
 
 	// RSS
 	rss.InitFeedParser()
+	rss.InitCache()
 	go func() {
 		// Wait until the time is a multiple of the update period
 		time.Sleep(time.Until(time.Now().Truncate(config.GetUpdatePeriod()).Add(config.GetUpdatePeriod())))

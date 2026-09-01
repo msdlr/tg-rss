@@ -33,6 +33,7 @@ type UpdateMsg struct {
 
 var feedParser *gofeed.Parser
 var lastQuery time.Time
+var cache ArticleCache
 
 func SetlastQuery() {
 	lastQuery = time.Now()
@@ -40,6 +41,11 @@ func SetlastQuery() {
 
 func GetlastQuery() time.Time {
 	return lastQuery
+}
+
+func InitCache() {
+	cache = *(NewArticleCache())
+	FetchAllFeeds(0)
 }
 
 func InitFeedParser() {
@@ -182,6 +188,75 @@ func FormatNewsHTML(news []Article) []string {
 	}
 
 	return messages
+}
+
+func FetchAllFeeds(old uint) {
+	feeds, err := db.GetAllFeeds()
+	if err != nil {
+		log.Println("Error gettings feeds from database:", err)
+		return
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(feeds))
+
+	SetlastQuery()
+	wTimeStart := time.Now()
+
+	for _, f := range feeds {
+		go func(f db.Feed) {
+			defer wg.Done()
+
+			arts := []Article{}
+			var oldPosts uint = 0
+			feed, err := feedParser.ParseURL(f.FeedURL)
+			if err != nil {
+				log.Println("Skipping source " + f.FeedURL + ": " + err.Error())
+				return
+			}
+
+			for _, article := range feed.Items {
+				newArticle := Article{
+					URL:         article.Link,
+					Timestamp:   *article.PublishedParsed,
+					Title:       article.Title,
+					Description: article.Description,
+					FeedTitle:   feed.Title,
+				}
+
+				newArticle.Title = func(s string) string {
+					result := s
+					for _, word := range strings.Fields(s) {
+						if strings.HasPrefix(word, "https://") {
+							result = strings.Replace(result, word, "[link]", 1)
+						}
+					}
+					return result
+				}(newArticle.Title)
+
+				if newArticle.Title == "" {
+					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
+				}
+
+				lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
+
+				if newArticle.Timestamp.Before(lastTimestamp) {
+					oldPosts++
+					if oldPosts > old {
+						break
+					} else {
+						arts = append(arts, newArticle)
+					}
+				}
+			}
+
+			if len(arts) > 0 {
+				cache.Set(f.FeedURL, arts)
+			}
+		}(f)
+	}
+	wg.Wait()
+	log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
 }
 
 func ReadAllFeeds() (messages []UpdateMsg) {
