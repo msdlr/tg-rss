@@ -70,76 +70,26 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 	news = make([]Article, 0)
 
-	artChan := make(chan Article, len(feedEntries))
+	oldestTimestamp := time.Now().Add(-config.GetUpdatePeriod())
 
-	var wg sync.WaitGroup
-	wg.Add(len(feedEntries))
+	for _, feed := range feedEntries {
+		OldArticlesRemaining := old
 
-	for _, feedEntry := range feedEntries {
-		go func(c chan<- Article, wg *sync.WaitGroup) {
-			defer wg.Done()
+		// Get the articles for this feed in the cache
+		articles, _ := cache.Get(feed.FeedURL)
 
-			var oldPosts uint = 0
-			feed, err := feedParser.ParseURL(feedEntry.FeedURL)
-			if err != nil {
-				// Timeout
-				log.Println("Skipping source " + feedEntry.FeedURL + ": " + err.Error())
-				return
+		for _, article := range articles {
+			if article.Timestamp.Before(oldestTimestamp) {
+				if OldArticlesRemaining == 0 {
+					break
+				} else {
+					news = append(news, article)
+					OldArticlesRemaining--
+				}
 			}
-
-			for _, article := range feed.Items {
-				newArticle := Article{
-					URL:         article.Link,
-					Timestamp:   *article.PublishedParsed,
-					Title:       article.Title,
-					Description: article.Description,
-					FeedTitle:   feed.Title,
-				}
-
-				// Detect links and remove them from the title
-				newArticle.Title = func(s string) string {
-					result := s
-
-					for _, word := range strings.Fields(s) {
-						if strings.HasPrefix(word, "https://") {
-							result = strings.Replace(result, word, "[link]", 1)
-						}
-					}
-
-					return result
-				}(newArticle.Title)
-
-				// But if the title was empty, use the URL
-				if newArticle.Title == "" {
-					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
-				}
-
-				// The oldest timestamp possible
-				lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
-
-				if newArticle.Timestamp.Before(lastTimestamp) {
-					oldPosts++
-					if oldPosts > old {
-						break
-					}
-				}
-
-				c <- newArticle
-			}
-
-		}(artChan, &wg)
-	}
-
-	go func() {
-		wg.Wait()
-		close(artChan)
-	}()
-
-	for a := range artChan {
-		news = append(news, a)
+		}
 	}
 	return
-
 }
 
 func FormatNewsHTML(news []Article) []string {
@@ -190,6 +140,13 @@ func FormatNewsHTML(news []Article) []string {
 	return messages
 }
 
+func CacheFeed(feedURL string) {
+	// No error checked because it's called after checking the validity
+	feed, _ := feedParser.ParseURL(feedURL)
+
+	cacheFeedArticlesFromFeed(feed)
+}
+
 func cacheFeedArticlesFromFeed(feed *gofeed.Feed) {
 	arts := []Article{}
 
@@ -218,7 +175,8 @@ func cacheFeedArticlesFromFeed(feed *gofeed.Feed) {
 	}
 
 	if len(arts) > 0 {
-		cache.Set(feed.FeedLink, arts)
+		link, _ := SanitizeFeedURL(feed.FeedLink)
+		cache.Set(link, arts)
 	}
 }
 
