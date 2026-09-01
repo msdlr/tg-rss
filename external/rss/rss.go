@@ -190,6 +190,38 @@ func FormatNewsHTML(news []Article) []string {
 	return messages
 }
 
+func cacheFeedArticlesFromFeed(feed *gofeed.Feed) {
+	arts := []Article{}
+
+	for _, article := range feed.Items {
+		newArticle := Article{
+			URL:         article.Link,
+			Timestamp:   *article.PublishedParsed,
+			Title:       article.Title,
+			Description: article.Description,
+			FeedTitle:   feed.Title,
+		}
+
+		title := newArticle.Title
+		for _, word := range strings.Fields(newArticle.Title) {
+			if strings.HasPrefix(word, "https://") {
+				title = strings.Replace(title, word, "[link]", 1)
+			}
+		}
+		newArticle.Title = title
+
+		if newArticle.Title == "" {
+			newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
+		}
+
+		arts = append(arts, newArticle)
+	}
+
+	if len(arts) > 0 {
+		cache.Set(feed.FeedLink, arts)
+	}
+}
+
 func FetchAllFeeds(old uint) {
 	feeds, err := db.GetAllFeeds()
 	if err != nil {
@@ -207,52 +239,13 @@ func FetchAllFeeds(old uint) {
 		go func(f db.Feed) {
 			defer wg.Done()
 
-			arts := []Article{}
-			var oldPosts uint = 0
 			feed, err := feedParser.ParseURL(f.FeedURL)
 			if err != nil {
 				log.Println("Skipping source " + f.FeedURL + ": " + err.Error())
 				return
 			}
 
-			for _, article := range feed.Items {
-				newArticle := Article{
-					URL:         article.Link,
-					Timestamp:   *article.PublishedParsed,
-					Title:       article.Title,
-					Description: article.Description,
-					FeedTitle:   feed.Title,
-				}
-
-				newArticle.Title = func(s string) string {
-					result := s
-					for _, word := range strings.Fields(s) {
-						if strings.HasPrefix(word, "https://") {
-							result = strings.Replace(result, word, "[link]", 1)
-						}
-					}
-					return result
-				}(newArticle.Title)
-
-				if newArticle.Title == "" {
-					newArticle.Title = strings.ReplaceAll(newArticle.URL, "https://", "")
-				}
-
-				lastTimestamp := time.Now().Add(-config.GetUpdatePeriod())
-
-				if newArticle.Timestamp.Before(lastTimestamp) {
-					oldPosts++
-					if oldPosts > old {
-						break
-					} else {
-						arts = append(arts, newArticle)
-					}
-				}
-			}
-
-			if len(arts) > 0 {
-				cache.Set(f.FeedURL, arts)
-			}
+			cacheFeedArticlesFromFeed(feed)
 		}(f)
 	}
 	wg.Wait()
