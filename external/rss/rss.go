@@ -45,7 +45,7 @@ func GetlastQuery() time.Time {
 
 func InitCache() {
 	cache = *(NewArticleCache())
-	FetchAllFeeds(0)
+	FetchAllFeeds()
 }
 
 func InitFeedParser() {
@@ -177,7 +177,7 @@ func CacheFeedArticlesFromFeed(feedURL string) {
 	}
 }
 
-func FetchAllFeeds(old uint) {
+func FetchAllFeeds() {
 	feeds, err := db.GetAllFeeds()
 	if err != nil {
 		log.Println("Error gettings feeds from database:", err)
