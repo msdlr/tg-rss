@@ -70,7 +70,7 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 
 	news = make([]Article, 0)
 
-	oldestTimestamp := time.Now().Add(-config.GetUpdatePeriod())
+	oldestTimestamp := GetlastQuery().Truncate(config.GetUpdatePeriod()).Add(-config.GetUpdatePeriod())
 
 	for _, feed := range feedEntries {
 		oldArticles := old
