@@ -48,6 +48,7 @@ func StartTasks() {
 		defer ticker.Stop()
 
 		for {
+			rss.FetchAllFeeds()
 			messages := rss.ReadAllFeeds()
 			for _, message := range messages {
 				for _, msg := range message.FormattedMessages {
