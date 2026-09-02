@@ -149,7 +149,7 @@ func CacheFeedArticlesFromFeed(feedURL string) {
 
 	for _, article := range feed.Items {
 		newArticle := Article{
-			URL:         feedURL,
+			URL:         article.Link,
 			Timestamp:   *article.PublishedParsed,
 			Title:       article.Title,
 			Description: article.Description,
