@@ -253,7 +253,7 @@ func handleSubCommand(ctx context.Context, b *bot.Bot, update *models.Update) {
 		subErr := db.Subscribe(update.Message.Chat.ID, feedID)
 
 		// Cache articles
-		rss.CacheFeed(url)
+		rss.CacheFeedArticlesFromFeed(url)
 
 		if subErr != nil {
 			log.Println("Error adding subscription")

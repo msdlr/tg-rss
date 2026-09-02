@@ -73,19 +73,21 @@ func GetArticlesForUser(userID int64, old uint) (news []Article) {
 	oldestTimestamp := time.Now().Add(-config.GetUpdatePeriod())
 
 	for _, feed := range feedEntries {
-		OldArticlesRemaining := old
+		oldArticles := old
 
 		// Get the articles for this feed in the cache
 		articles, _ := cache.Get(feed.FeedURL)
 
 		for _, article := range articles {
-			if article.Timestamp.Before(oldestTimestamp) {
-				if OldArticlesRemaining == 0 {
-					break
-				} else {
+			if old == 0 {
+				if article.Timestamp.After(oldestTimestamp) {
 					news = append(news, article)
-					OldArticlesRemaining--
+				} else {
+					break
 				}
+			} else if oldArticles > 0 {
+				oldArticles--
+				news = append(news, article)
 			}
 		}
 	}
@@ -140,19 +142,14 @@ func FormatNewsHTML(news []Article) []string {
 	return messages
 }
 
-func CacheFeed(feedURL string) {
-	// No error checked because it's called after checking the validity
-	feed, _ := feedParser.ParseURL(feedURL)
-
-	cacheFeedArticlesFromFeed(feed)
-}
-
-func cacheFeedArticlesFromFeed(feed *gofeed.Feed) {
+func CacheFeedArticlesFromFeed(feedURL string) {
 	arts := []Article{}
+
+	feed, _ := feedParser.ParseURL(feedURL)
 
 	for _, article := range feed.Items {
 		newArticle := Article{
-			URL:         article.Link,
+			URL:         feedURL,
 			Timestamp:   *article.PublishedParsed,
 			Title:       article.Title,
 			Description: article.Description,
@@ -175,7 +172,7 @@ func cacheFeedArticlesFromFeed(feed *gofeed.Feed) {
 	}
 
 	if len(arts) > 0 {
-		link, _ := SanitizeFeedURL(feed.FeedLink)
+		link, _ := SanitizeFeedURL(feedURL)
 		cache.Set(link, arts)
 	}
 }
@@ -196,14 +193,7 @@ func FetchAllFeeds(old uint) {
 	for _, f := range feeds {
 		go func(f db.Feed) {
 			defer wg.Done()
-
-			feed, err := feedParser.ParseURL(f.FeedURL)
-			if err != nil {
-				log.Println("Skipping source " + f.FeedURL + ": " + err.Error())
-				return
-			}
-
-			cacheFeedArticlesFromFeed(feed)
+			CacheFeedArticlesFromFeed(f.FeedURL)
 		}(f)
 	}
 	wg.Wait()
