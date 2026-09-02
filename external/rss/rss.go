@@ -205,8 +205,6 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 	if err != nil {
 		log.Println("Error fetching users:", err)
 	}
-	SetlastQuery()
-	wTimeStart := time.Now()
 
 	var wg sync.WaitGroup
 	wg.Add(len(users))
@@ -230,7 +228,6 @@ func ReadAllFeeds() (messages []UpdateMsg) {
 		close(msgChan)
 	}()
 
-	log.Println("Read all feeds in " + (time.Since(wTimeStart)).String())
 	for msg := range msgChan {
 		messages = append(messages, msg)
 	}
