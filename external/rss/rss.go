@@ -145,7 +145,12 @@ func FormatNewsHTML(news []Article) []string {
 func CacheFeedArticlesFromFeed(feedURL string) {
 	arts := []Article{}
 
-	feed, _ := feedParser.ParseURL(feedURL)
+	feed, feedErr := feedParser.ParseURL(feedURL)
+
+	if feedErr != nil {
+		log.Println("Error fetching " + feedURL + ": " + feedErr.Error())
+		return
+	}
 
 	for _, article := range feed.Items {
 		newArticle := Article{
